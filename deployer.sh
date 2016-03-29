@@ -2,10 +2,6 @@
 # Human Device Yii 2 deployer
 # ========================================================
 # -h, --help for help
-# -d, --deploy for deployment
-# -dv, --deployverbose (verbose)
-# -r, --rollback for rollback
-# -rv, --rollbackverbose (verbose)
 
 # SETTINGS
 # ========================================================
@@ -33,11 +29,13 @@ C_FOLDER="composer"
 # temporary composer folder name for vendor storage
 C_TEMP_FOLDER="composer_temp"
 
-# script flags
+# script variables
 # ========================================================
-KNOWN_PARAMS=0
+VERSION=""
 VERBOSE=0
 USING_TEMPORARY_COMPOSER=0
+MODE=0
+COMPOSER_DONT_UPDATE=0
 
 LINE() {
     local LINE=$(printf '%0.1s' "."{1..60})
@@ -66,16 +64,27 @@ CREATE_FOLDER() {
     return 0
 }
 
-CHECK_RELEASE_FOLDER() {
+INIT_RELEASE_FOLDER() {
     if [[ ! -d "./${R_FOLDER}"  ]]; then
         CREATE_FOLDER " > initialing releases folder" "./${R_FOLDER}"
         if [[ $? -eq 0 ]]; then
             return 0
         fi
     fi
-    LINE " > checking deployed release folder"
+    LINE " > checking release ${1} folder"
     if [[ -d "./${R_FOLDER}/$1" ]]; then
         echo "ALREADY EXISTS! > exit with error"
+    else
+        echo "ok"
+        return 1
+    fi
+    return 0
+}
+
+CHECK_RELEASE_FOLDER() {
+    LINE " > checking release ${1} folder"
+    if [[ ! -d "./${R_FOLDER}/$1" ]]; then
+        echo "NOT FOUND! > exit with error"
     else
         echo "ok"
         return 1
@@ -118,6 +127,26 @@ COMPOSER_INSTALL() {
     return 0
 }
 
+COMPOSER_UPDATE() {
+    if [[ $COMPOSER_DONT_UPDATE -eq 1 ]]; then
+        return 1
+    fi
+    LINE " > updating composer dependencies"
+    cd "./${C_FOLDER}"
+    local CMD="composer update -q"
+    if [[ $VERBOSE -eq 1 ]]; then
+        CMD="composer update"
+    fi
+    if eval "$CMD"
+    then
+        echo "updated"
+        cd ..
+        return 1
+    fi
+    cd ..
+    return 0
+}
+
 CHECK_VENDOR() {
     if [[ ! -d "./${C_FOLDER}" ]]; then
         CREATE_FOLDER " > creating composer folder" "./${C_FOLDER}"
@@ -125,7 +154,7 @@ CHECK_VENDOR() {
             return 0
         fi
     fi
-    LINE " > checking deployed release composer.json"
+    LINE " > checking release ${1} composer.json"
     if [[ ! -e "./${R_FOLDER}/$1/composer.json" ]]; then
         echo "NO COMPOSER.JSON FOUND! > exit with error"
         return 0
@@ -133,7 +162,7 @@ CHECK_VENDOR() {
         echo "ok"
     fi
     if [[ ! -e "./${C_FOLDER}/composer.json" ]]; then
-        LINE " > copying composer.json from deployed release folder"
+        LINE " > copying composer.json from release ${1} folder"
         if cp "./${R_FOLDER}/$1/composer.json" "./${C_FOLDER}"
         then
             echo "copied"
@@ -147,6 +176,10 @@ CHECK_VENDOR() {
         LINE " > comparing deployed and vendor composer.json versions"
         if [[ $(stat -c%s "./${C_FOLDER}/composer.json") -eq $(stat -c%s "./${R_FOLDER}/${1}/composer.json") ]]; then
             echo "matching"
+            COMPOSER_UPDATE
+            if [[ $? -eq 0 ]]; then
+                return 0
+            fi
             return 1
         else
             echo "different"
@@ -155,7 +188,7 @@ CHECK_VENDOR() {
                 return 0
             fi
             USING_TEMPORARY_COMPOSER=1
-            LINE " > copying composer.json from deployed release folder"
+            LINE " > copying composer.json from release ${1} folder"
             if cp "./${R_FOLDER}/${1}/composer.json" "./${C_TEMP_FOLDER}"
             then
                 echo "copied"
@@ -171,7 +204,7 @@ CHECK_VENDOR() {
 }
 
 SYMLINK() {
-    LINE " > symlinking vendor folder to deployed release"
+    LINE " > symlinking vendor folder to release $1"
     local CMD="ln -s "./../../${C_FOLDER}/vendor" "./${R_FOLDER}/${1}/vendor""
     if [[ $USING_TEMPORARY_COMPOSER -eq 1 ]]; then
         CMD="ln -s "./../../${C_TEMP_FOLDER}/vendor" "./${R_FOLDER}/${1}/vendor""
@@ -271,7 +304,7 @@ BACKUP_RECOVER() {
 
 SWITCH() {
     if [[ ! -h "./${HOST}" ]]; then
-        LINE " > symlinking ${HOST} to deployed release"
+        LINE " > symlinking ${HOST} to release $1"
         SYMLINK_RELEASE "$1"
         if [[ $? -eq 1 ]]; then
             return 1
@@ -279,7 +312,7 @@ SWITCH() {
     else
         BACKUP_CREATE
         if [[ $? -eq 1 ]]; then
-            LINE " > switching to deployed release"
+            LINE " > switching to release $1"
             if rm "./${HOST}"
             then
                 SYMLINK_RELEASE "$1"
@@ -297,9 +330,8 @@ SWITCH() {
 }
 
 DEPLOY() {
-    local VERSION="${1##*/}"
     echo "STARTING deployment of ${PROJECT} version ${VERSION} at $(date +"%r")."
-    CHECK_RELEASE_FOLDER "$VERSION"
+    INIT_RELEASE_FOLDER "$VERSION"
     if [[ $? -eq 1 ]]; then
         DOWNLOAD_RELEASE "$VERSION"
         if [[ $? -eq 1 ]]; then
@@ -319,46 +351,131 @@ DEPLOY() {
 }
 
 ROLLBACK() {
-    local VERSION="${1##*/}"
     echo "STARTING rollback of ${PROJECT} to version ${VERSION} at $(date +"%r")."
+    CHECK_RELEASE_FOLDER "$VERSION"
+    if [[ $? -eq 1 ]]; then
+        CHECK_VENDOR "$VERSION"
+        if [[ $? -eq 1 ]]; then
+            SYMLINK "$VERSION"
+            if [[ $? -eq 1 ]]; then
+                SWITCH "$VERSION"
+            fi
+        fi
+    fi
     END_MARKER
 }
 
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-    KNOWN_PARAMS=1
-    echo "deploy SVN tagged version (quiet):"
-    echo "    ./deployer.sh -d tag"
-    echo "    -d, --deploy"
-    echo "deploy SVN tagged version (verbose):"
-    echo "    ./deployer.sh -dv tag"
-    echo "    -dv, --deployverbose"
-    echo "rollback to the previously deployed version (quiet):"
-    echo "    ./deployer.sh -r tag"
-    echo "    -r, --rollback"
-    echo "rollback to the previously deployed version (verbose):"
-    echo "    ./deployer.sh -rv tag"
-    echo "    -rv, --rollbackverbose"
-elif [[ $# -eq 2 ]]; then
+START() {
+    if [[ $MODE -eq 1 ]]; then
+        echo "NAME"
+        echo ""
+        echo "    deployer.sh - deploy SVN version of Yii 2 project"
+        echo ""
+        echo "SYNOPSIS"
+        echo ""
+        echo "    deployer.sh -d [TAG] [-v] [-n]"
+        echo "    deployer.sh -r [TAG] [-v] [-n]"
+        echo "    deployer.sh -h"
+        echo ""
+        echo "DESCRIPTION"
+        echo ""
+        echo "    Deploys the target TAG version of Yii 2 project or rollbacks to the target TAG version."
+        echo "    Creates the releases and composer folders. Deployed version is stored in the releases"
+        echo "    folder under the TAG name. Composer folder stores the vendor folder with composer "
+        echo "    dependencies. TAG version is SVN imported using provided SVN credentials."
+        echo "    Deployed or rollbacked version is symlinked to the Apache host target folder."
+        echo ""
+        echo "    -d [TAG], --deploy [TAG]"
+        echo "        deploy TAG version"
+        echo ""
+        echo "    -r [TAG], --rollback [TAG]"
+        echo "        rollback to TAG version"
+        echo ""
+        echo "    -v, --verbose"
+        echo "        runs the script in verbose mode where output of svn, composer and init is visible"
+        echo ""
+        echo "    -n, --noupdate"
+        echo "        skips composer update part (composer install ignores this option)"
+        echo ""
+        echo "    -h, --help"
+        echo "        this information (ignores other options)"
+        echo ""
+        echo "AUTHOR"
+        echo ""
+        echo "    Pawel Brzozowski"
+        echo ""
+        echo "COPYRIGHT"
+        echo ""
+        echo "    Copyright Â© 2016 Human Device Sp. z o.o."
+        echo ""
+    elif [[ $MODE -eq 4 ]]; then
+        echo "    You can not run deploy and rollback at the same time."
+        echo "    For help run"
+        echo "        deployer.sh -h"
+    elif [[ $MODE -eq 5 ]]; then
+        echo "    Unrecognised option."
+        echo "    For help run"
+        echo "        deployer.sh -h"
+    elif [[ $MODE -eq 2 ]]; then
+        if [[ "$VERSION" = "" ]]; then
+            echo "    Version tag missing."
+            echo "    For help run"
+            echo "        deployer.sh -h"
+        else
+            DEPLOY "$VERSION"
+        fi
+    elif [[ $MODE -eq 3 ]]; then
+        if [[ "$VERSION" = "" ]]; then
+            echo "    Version tag missing."
+            echo "    For help run"
+            echo "        deployer.sh -h"
+        else
+            ROLLBACK "$VERSION"
+        fi
+    else
+        echo "    Yii 2 project deployer."
+        echo "    For help run"
+        echo "        deployer.sh -h"
+    fi
+}
+
+while [[ $# > 0 ]]
+do
     case $1 in
-        -d|--deploy)
-            KNOWN_PARAMS=1
-            DEPLOY "$2"
+        -h|--help)
+            MODE=1
+            break
             ;;
-        -dv|--deployverbose)
-            KNOWN_PARAMS=1
-            VERBOSE=1
-            DEPLOY "$2"
+        -d|--deploy)
+            if [[ $MODE -eq 3 ]]; then
+                MODE=4
+            else
+                MODE=2
+            fi
+            VERSION="${2##*/}"
+            shift
             ;;
         -r|--rollback)
-            KNOWN_PARAMS=1
-            ROLLBACK "$2"
+            if [[ $MODE -eq 2 ]]; then
+                MODE=4
+            else
+                MODE=3
+            fi
+            VERSION="${2##*/}"
+            shift
             ;;
-        -rv|--rollbackverbose)
-            KNOWN_PARAMS=1
+        -v|--verbose)
             VERBOSE=1
-            ROLLBACK "$2"
+            ;;
+        -n|--noupdate)
+            COMPOSER_DONT_UPDATE=1
+            ;;
+        *)
+            MODE=5
+            break
             ;;
     esac
-fi
+    shift
+done
 
-[ $KNOWN_PARAMS -eq 1 ] || echo "run ./deployer.sh -h or ./deployer.sh --help to get help"
+START
