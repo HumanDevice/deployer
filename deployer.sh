@@ -94,9 +94,9 @@ CHECK_RELEASE_FOLDER() {
 
 DOWNLOAD_RELEASE() {
     LINE " > downloading SVN snapshot"
-    local CMD="svn --non-interactive --username "${SVN_USER}" --password "${SVN_PASS}" export -q "${SVN_URL}/tags/${1}" "./${R_FOLDER}/${1}""
+    local CMD="svn export -q "${SVN_URL}/tags/${1}" "./${R_FOLDER}/${1}" --non-interactive --no-auth-cache --username "${SVN_USER}" --password "\"${SVN_PASS}\"""
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="svn --non-interactive --username "${SVN_USER}" --password "${SVN_PASS}" export "${SVN_URL}/tags/${1}" "./${R_FOLDER}/${1}""
+        CMD="svn export "${SVN_URL}/tags/${1}" "./${R_FOLDER}/${1}" --non-interactive --no-auth-cache --username "${SVN_USER}" --password "\"${SVN_PASS}\"""
     fi
     if eval "$CMD"
     then
