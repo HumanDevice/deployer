@@ -15,7 +15,7 @@ ENV="Development"
 # SVN credentials
 SVN_URL="change me"
 SVN_USER="change me"
-SVN_PASS="change me"
+SVN_PASS='change me'
 
 # project name
 PROJECT="change me"
@@ -94,9 +94,9 @@ CHECK_RELEASE_FOLDER() {
 
 DOWNLOAD_RELEASE() {
     LINE " > downloading SVN snapshot"
-    local CMD="svn export -q "${SVN_URL}/tags/${1}" "./${R_FOLDER}/${1}" --non-interactive --no-auth-cache --username "${SVN_USER}" --password "\"${SVN_PASS}\"""
+    local CMD="svn export -q \"${SVN_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="svn export "${SVN_URL}/tags/${1}" "./${R_FOLDER}/${1}" --non-interactive --no-auth-cache --username "${SVN_USER}" --password "\"${SVN_PASS}\"""
+        CMD="svn export \"${SVN_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
     fi
     if eval "$CMD"
     then
