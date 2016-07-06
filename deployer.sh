@@ -205,9 +205,9 @@ CHECK_VENDOR() {
 
 SYMLINK() {
     LINE " > symlinking vendor folder to release $1"
-    local CMD="ln -s "./../../${C_FOLDER}/vendor" "./${R_FOLDER}/${1}/vendor""
+    local CMD="ln -s \"./../../${C_FOLDER}/vendor\" \"./${R_FOLDER}/${1}/vendor\""
     if [[ $USING_TEMPORARY_COMPOSER -eq 1 ]]; then
-        CMD="ln -s "./../../${C_TEMP_FOLDER}/vendor" "./${R_FOLDER}/${1}/vendor""
+        CMD="ln -s \"./../../${C_TEMP_FOLDER}/vendor\" \"./${R_FOLDER}/${1}/vendor\""
     fi
     if eval "$CMD"
     then
@@ -219,9 +219,9 @@ SYMLINK() {
 
 INIT() {
     LINE " > running Yii 2 init for ${ENV}"
-    local CMD="php "./${R_FOLDER}/${1}/init" --env=${ENV} --overwrite=All >/dev/null"
+    local CMD="php \"./${R_FOLDER}/${1}/init\" --env=${ENV} --overwrite=All >/dev/null"
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="php "./${R_FOLDER}/${1}/init" --env=${ENV} --overwrite=All"
+        CMD="php \"./${R_FOLDER}/${1}/init\" --env=${ENV} --overwrite=All"
     fi
     if eval "$CMD"
     then
@@ -406,7 +406,7 @@ START() {
         echo ""
         echo "COPYRIGHT"
         echo ""
-        echo "    Copyright Â© 2016 Human Device Sp. z o.o."
+        echo "    Copyright (c) 2016 Human Device Sp. z o.o."
         echo ""
     elif [[ $MODE -eq 4 ]]; then
         echo "    You can not run deploy and rollback at the same time."
