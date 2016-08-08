@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer
+# Human Device Yii 2 deployer v1.1
 # ========================================================
 # -h, --help for help
 
@@ -9,7 +9,7 @@
 # project host folder name
 HOST="change me"
 
-# environment name for init
+# default environment name for init
 ENV="Development"
 
 # SVN credentials
@@ -22,6 +22,9 @@ PROJECT="change me"
 
 # releases folder name
 R_FOLDER="releases"
+
+# development release folder name
+D_FOLDER="_dev_"
 
 # composer folder name for vendor storage
 C_FOLDER="composer"
@@ -81,6 +84,27 @@ INIT_RELEASE_FOLDER() {
     return 0
 }
 
+INIT_DEV_RELEASE_FOLDER() {
+    if [[ ! -d "./${R_FOLDER}"  ]]; then
+        CREATE_FOLDER " > initialing releases folder" "./${R_FOLDER}"
+        if [[ $? -eq 0 ]]; then
+            return 0
+        fi
+    fi
+    LINE " > removing DEV release folder"
+    if [[ -d "./${R_FOLDER}/${D_FOLDER}" ]]; then
+        if rm -rf "./${R_FOLDER}/${D_FOLDER}"
+        then
+            echo "deleted"
+            return 1
+        fi
+    else
+        echo "ready"
+        return 1
+    fi
+    return 0
+}
+
 CHECK_RELEASE_FOLDER() {
     LINE " > checking release ${1} folder"
     if [[ ! -d "./${R_FOLDER}/$1" ]]; then
@@ -97,6 +121,20 @@ DOWNLOAD_RELEASE() {
     local CMD="svn export -q \"${SVN_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
     if [[ $VERBOSE -eq 1 ]]; then
         CMD="svn export \"${SVN_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
+    fi
+    if eval "$CMD"
+    then
+        echo "downloaded"
+        return 1
+    fi
+    return 0
+}
+
+DOWNLOAD_DEV_RELEASE() {
+    LINE " > downloading DEV SVN snapshot"
+    local CMD="svn export -q \"${SVN_URL}/branches/dev\" \"./${R_FOLDER}/${D_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
+    if [[ $VERBOSE -eq 1 ]]; then
+        CMD="svn export \"${SVN_URL}/branches/dev\" \"./${R_FOLDER}/${FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
     fi
     if eval "$CMD"
     then
@@ -365,6 +403,27 @@ ROLLBACK() {
     END_MARKER
 }
 
+DEPLOYDEV() {
+    echo "STARTING deployment of ${PROJECT} version DEV at $(date +"%r")."
+    INIT_DEV_RELEASE_FOLDER
+    if [[ $? -eq 1 ]]; then
+        DOWNLOAD_DEV_RELEASE
+        if [[ $? -eq 1 ]]; then
+            CHECK_VENDOR "$D_FOLDER"
+            if [[ $? -eq 1 ]]; then
+                SYMLINK "$D_FOLDER"
+                if [[ $? -eq 1 ]]; then
+                    INIT "$D_FOLDER"
+                    if [[ $? -eq 1 ]]; then
+                        SWITCH "$D_FOLDER"
+                    fi
+                fi
+            fi
+        fi
+    fi
+    END_MARKER
+}
+
 START() {
     if [[ $MODE -eq 1 ]]; then
         echo "NAME"
@@ -373,8 +432,9 @@ START() {
         echo ""
         echo "SYNOPSIS"
         echo ""
-        echo "    deployer.sh -d [TAG] [-v] [-n]"
-        echo "    deployer.sh -r [TAG] [-v] [-n]"
+        echo "    deployer.sh -d TAG [-v] [-n] [-e ENV]"
+        echo "    deployer.sh -r TAG [-v] [-n] [-e ENV]"
+        echo "    deployer.sh -dev [-v] [-n] [-e ENV]"
         echo "    deployer.sh -h"
         echo ""
         echo "DESCRIPTION"
@@ -385,17 +445,23 @@ START() {
         echo "    dependencies. TAG version is SVN imported using provided SVN credentials."
         echo "    Deployed or rollbacked version is symlinked to the Apache host target folder."
         echo ""
-        echo "    -d [TAG], --deploy [TAG]"
+        echo "    -d TAG, --deploy TAG"
         echo "        deploy TAG version"
         echo ""
-        echo "    -r [TAG], --rollback [TAG]"
+        echo "    -r TAG, --rollback TAG"
         echo "        rollback to TAG version"
+        echo ""
+        echo "    -dev"
+        echo "        deploy DEV version"
         echo ""
         echo "    -v, --verbose"
         echo "        runs the script in verbose mode where output of svn, composer and init is visible"
         echo ""
         echo "    -n, --noupdate"
         echo "        skips composer update part (composer install ignores this option)"
+        echo ""
+        echo "    -e, --env"
+        echo "        sets environment name for init"
         echo ""
         echo "    -h, --help"
         echo "        this information (ignores other options)"
@@ -408,14 +474,6 @@ START() {
         echo ""
         echo "    Copyright (c) 2016 Human Device Sp. z o.o."
         echo ""
-    elif [[ $MODE -eq 4 ]]; then
-        echo "    You can not run deploy and rollback at the same time."
-        echo "    For help run"
-        echo "        deployer.sh -h"
-    elif [[ $MODE -eq 5 ]]; then
-        echo "    Unrecognised option."
-        echo "    For help run"
-        echo "        deployer.sh -h"
     elif [[ $MODE -eq 2 ]]; then
         if [[ "$VERSION" = "" ]]; then
             echo "    Version tag missing."
@@ -432,6 +490,16 @@ START() {
         else
             ROLLBACK "$VERSION"
         fi
+    elif [[ $MODE -eq 4 ]]; then
+        echo "    You can not run deploy, rollback and development deploy at the same time."
+        echo "    For help run"
+        echo "        deployer.sh -h"
+    elif [[ $MODE -eq 5 ]]; then
+        DEPLOYDEV
+    elif [[ $MODE -eq 6 ]]; then
+        echo "    Unrecognised option."
+        echo "    For help run"
+        echo "        deployer.sh -h"
     else
         echo "    Yii 2 project deployer."
         echo "    For help run"
@@ -446,8 +514,23 @@ do
             MODE=1
             break
             ;;
+        -v|--verbose)
+            VERBOSE=1
+            ;;
+        -n|--noupdate)
+            COMPOSER_DONT_UPDATE=1
+            ;;
+        -e|--env)
+            ENV="${2##*/}"
+            shift
+            ;;
+        -dev)
+            MODE=5
+            ;;
         -d|--deploy)
-            if [[ $MODE -eq 3 ]]; then
+            if [[ $MODE -eq 5 ]]; then
+                MODE=4
+            elif [[ $MODE -eq 3 ]]; then
                 MODE=4
             else
                 MODE=2
@@ -456,7 +539,9 @@ do
             shift
             ;;
         -r|--rollback)
-            if [[ $MODE -eq 2 ]]; then
+            if [[ $MODE -eq 5 ]]; then
+                MODE=4
+            elif [[ $MODE -eq 2 ]]; then
                 MODE=4
             else
                 MODE=3
@@ -464,14 +549,9 @@ do
             VERSION="${2##*/}"
             shift
             ;;
-        -v|--verbose)
-            VERBOSE=1
-            ;;
-        -n|--noupdate)
-            COMPOSER_DONT_UPDATE=1
-            ;;
+        
         *)
-            MODE=5
+            MODE=6
             break
             ;;
     esac
