@@ -134,7 +134,7 @@ DOWNLOAD_DEV_RELEASE() {
     LINE " > downloading DEV SVN snapshot"
     local CMD="svn export -q \"${SVN_URL}/branches/dev\" \"./${R_FOLDER}/${D_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="svn export \"${SVN_URL}/branches/dev\" \"./${R_FOLDER}/${FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
+        CMD="svn export \"${SVN_URL}/branches/dev\" \"./${R_FOLDER}/${D_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
     fi
     if eval "$CMD"
     then
