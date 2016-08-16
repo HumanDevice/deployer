@@ -20,7 +20,7 @@ dependencies. TAG version is SVN-imported using provided SVN credentials.
 
 Deployed or rollbacked version is symlinked to the Apache host target folder.
 
-| option | alias          | decription
+| option | alias          | description
 |--------|----------------|-----------------------------------------------------------------------------------
 | -d TAG | --deploy TAG   | deploy TAG version
 | -r TAG | --rollback TAG | rollback to TAG version
