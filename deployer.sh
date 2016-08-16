@@ -402,8 +402,8 @@ SWITCH() {
     return 0
 }
 
-# switches development releases
-SWITCHDEV() {
+# moves next development release to current
+MOVEDEV() {
     if [[ -d "./${R_FOLDER}/${DC_FOLDER}" ]]; then
         LINE " > removing old current development release"
         if rm -rf "./${R_FOLDER}/${DC_FOLDER}"
@@ -421,30 +421,7 @@ SWITCHDEV() {
     else
         return 0
     fi
-    if [[ ! -h "./${HOST}" ]]; then
-        LINE " > symlinking ${HOST} to development release"
-        SYMLINK_RELEASE "${DC_FOLDER}"
-        if [[ $? -eq 1 ]]; then
-            return 1
-        fi
-    else
-        BACKUP_CREATE
-        if [[ $? -eq 1 ]]; then
-            LINE " > switching to development release"
-            if rm "./${HOST}"
-            then
-                SYMLINK_RELEASE "${DC_FOLDER}"
-                if [[ $? -eq 1 ]]; then
-                    BACKUP_DELETE
-                    return 1
-                else
-                    BACKUP_RECOVER
-                fi
-            fi
-            BACKUP_DELETE
-        fi
-    fi
-    return 0
+    return 1
 }
 
 # deploys tag
@@ -494,11 +471,14 @@ DEPLOYDEV() {
         if [[ $? -eq 1 ]]; then
             CHECK_VENDOR "$DN_FOLDER"
             if [[ $? -eq 1 ]]; then
-                SYMLINK "$DN_FOLDER"
+                MOVEDEV
                 if [[ $? -eq 1 ]]; then
-                    INIT "$DN_FOLDER"
+                    SYMLINK "$DC_FOLDER"
                     if [[ $? -eq 1 ]]; then
-                        SWITCHDEV
+                        INIT "$DC_FOLDER"
+                        if [[ $? -eq 1 ]]; then
+                            SWITCH "$DC_FOLDER"
+                        fi
                     fi
                 fi
             fi
