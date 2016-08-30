@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v1.2
+# Human Device Yii 2 deployer v1.3
 # ========================================================
 # -h, --help for help
 
@@ -180,7 +180,11 @@ COMPOSER_INSTALL() {
     if [[ $VERBOSE -eq 1 ]]; then
         CMD="composer install"
     fi
-    if eval "$CMD"
+    local NODEV=""
+    if [[ "$ENV" = "Production" ]]; then
+        NODEV="--no-dev"
+    fi
+    if eval "$CMD $NODEV"
     then
         echo "installed"
         cd ..
@@ -201,7 +205,11 @@ COMPOSER_UPDATE() {
     if [[ $VERBOSE -eq 1 ]]; then
         CMD="composer update"
     fi
-    if eval "$CMD"
+    local NODEV=""
+    if [[ "$ENV" = "Production" ]]; then
+        NODEV="--no-dev"
+    fi
+    if eval "$CMD $NODEV"
     then
         echo "updated"
         cd ..
