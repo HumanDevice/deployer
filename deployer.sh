@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v1.3
+# Human Device Yii 2 deployer v1.4
 # ========================================================
 # -h, --help for help
 
@@ -7,15 +7,15 @@
 # ========================================================
 
 # project host folder name
-HOST="change me"
+HOST=""
 
 # default environment name for Yii 2 init
 ENV="Development"
 
 # SVN credentials
-SVN_URL='change me'
-SVN_USER='change me'
-SVN_PASS='change me'
+SVN_URL=''
+SVN_USER=''
+SVN_PASS=''
 
 # SVN branch path for development release
 SVN_BRANCH='branches/dev'
@@ -24,7 +24,7 @@ SVN_BRANCH='branches/dev'
 RIGHTS=""
 
 # project name (just for display)
-PROJECT="change me"
+PROJECT="YII 2"
 
 # production releases folder name
 R_FOLDER="releases"
@@ -41,6 +41,12 @@ C_FOLDER="composer"
 # temporary composer folder name for vendor storage
 C_TEMP_FOLDER="composer_temp"
 
+# load cfg settings
+# ========================================================
+if [[ -e "./deployer.cfg" ]]; then
+    source "./deployer.cfg"
+fi
+
 # script variables
 # ========================================================
 VERSION=""
@@ -48,6 +54,7 @@ VERBOSE=0
 USING_TEMPORARY_COMPOSER=0
 MODE=0
 COMPOSER_DONT_UPDATE=0
+DELETE_ENVS=1
 
 # generate line with dots
 LINE() {
@@ -60,6 +67,13 @@ END_MARKER() {
     if [[ $USING_TEMPORARY_COMPOSER -eq 1 ]]; then
         LINE " > deleting temporary composer folder"
         if rm -rf "./${C_TEMP_FOLDER}"
+        then
+            echo "deleted"
+        fi
+    fi
+    if [[ $DELETE_ENVS -eq 1 ]]; then
+        LINE " > deleting environments folder"
+        if rm -rf "./${HOST}/environments"
         then
             echo "deleted"
         fi
