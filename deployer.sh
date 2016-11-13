@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v1.4
+# Human Device Yii 2 deployer v1.5
 # ========================================================
 # -h, --help for help
 
@@ -196,7 +196,7 @@ COMPOSER_INSTALL() {
     fi
     local NODEV=""
     if [[ "$ENV" = "Production" ]]; then
-        NODEV="--no-dev"
+        NODEV="--no-dev --optimize-autoloader"
     fi
     if eval "$CMD $NODEV"
     then
@@ -221,7 +221,7 @@ COMPOSER_UPDATE() {
     fi
     local NODEV=""
     if [[ "$ENV" = "Production" ]]; then
-        NODEV="--no-dev"
+        NODEV="--no-dev --optimize-autoloader"
     fi
     if eval "$CMD $NODEV"
     then
