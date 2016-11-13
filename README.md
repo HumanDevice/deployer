@@ -1,6 +1,6 @@
 # bash scripts
 
-## deployer v1.4
+## deployer v1.5
 
 deploy SVN version of Yii 2 project
 
@@ -19,7 +19,7 @@ folder under the TAG name. Composer folder stores the vendor folder with compose
 dependencies. TAG version is SVN-imported using provided SVN credentials.
 Script deletes `environments` folder.
 
-If environment is set to `Production` composer runs with option `--no-dev`.
+If environment is set to `Production` composer runs with option `--no-dev --optimize-autoloader`.
 
 Deployed or rollbacked version is symlinked to the Apache host target folder.
 
