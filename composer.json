@@ -3,5 +3,11 @@
     "description": "SVN deployer for Yii 2 apps.",
     "type": "script",
     "license": "internal",
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "scripts": {
+        "post-update-cmd": [
+            "cp deployer /usr/local/bin",
+            "chmod +x /usr/local/bin/deployer"
+        ]
+    }
 }
