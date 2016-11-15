@@ -20,6 +20,12 @@ Copy `deployer` (optionally with `deployer.cfg`) to the project folder.
 Run
 
     composer global require humandevice/deployer
+    
+and then
+
+    composer run-script post-update-cmd -d COMPOSER_VENDOR/humandevice/deployer
+    
+where `COMPOSER_VENDOR` is the vendor composer folder. You can find it by running `composer global config vendor-dir --absolute`.
 
 ## GLOBAL UPDATE
 
