@@ -6,7 +6,7 @@
     "minimum-stability": "stable",
     "scripts": {
         "post-update-cmd": [
-            "cp deployer /usr/local/bin",
+            "cp -f ./deployer /usr/local/bin",
             "chmod +x /usr/local/bin/deployer"
         ]
     }
