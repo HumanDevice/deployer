@@ -21,15 +21,15 @@ Run
 
     composer global require humandevice/deployer
 
-and then
-
-    composer global run-script post-update-cmd -d ./vendor/humandevice/deployer
-    
 ## GLOBAL UPDATE
 
 Run
 
     deployer -u
+    
+or
+
+    composer global update humandevice/deployer
 
 ## DESCRIPTION
 
