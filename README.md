@@ -1,4 +1,4 @@
-# deployer v1.5.1
+# deployer v2
 
 Deploys SVN version of Yii 2 project
 
