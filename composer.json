@@ -2,5 +2,11 @@
     "name": "humandevice/deployer",
     "description": "SVN deployer for Yii 2 apps.",
     "type": "script",
-    "license": "internal"
+    "license": "internal",
+    "scripts": {
+        "post-update-cmd": [
+            "cp -u ./deployer /usr/local/bin/",
+            "chmod +x /usr/local/bin/deployer"
+        ]
+    }
 }
