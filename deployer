@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v2
+# Human Device Yii 2 deployer v2.1
 # ========================================================
 # -h, --help for help
 
@@ -543,10 +543,20 @@ CREATECONFIG() {
     echo ""
 }
 
+# updates deployer
+UPDATE() {
+    echo " > updating deployer in global mode:"
+    composer global update humandevice/deployer
+    composer global run-script post-update-cmd -d ./vendor/humandevice/deployer
+    echo ""
+}
+
 # starts script
 START() {
     if [[ $MODE -eq 7 ]]; then
         CREATECONFIG
+    elif [[ $MODE -eq 8 ]]; then
+        UPDATE
     elif [[ $MODE -eq 1 ]]; then
         echo "NAME"
         echo ""
@@ -591,6 +601,9 @@ START() {
         echo ""
         echo "    -c, --config"
         echo "        creates deployer.cfg in current folder (ignores other options)"
+        echo ""
+        echo "    -u, --update"
+        echo "        updates deployer using composer in global mode (ignores other options)"
         echo ""
         echo "AUTHOR"
         echo ""
@@ -638,6 +651,10 @@ do
     case $1 in
         -c|--config)
             MODE=7
+            break
+            ;;
+        -u|--update)
+            MODE=8
             break
             ;;
         -h|--help)
