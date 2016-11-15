@@ -1,0 +1,7 @@
+{
+    "name": "humandevice/deployer",
+    "description": "SVN deployer for Yii 2 apps.",
+    "type": "script",
+    "license": "internal",
+    "minimum-stability": "stable"
+}
