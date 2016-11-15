@@ -1,17 +1,15 @@
-# bash scripts
+# deployer v1.5.1
 
-## deployer v1.5
+Deploys SVN version of Yii 2 project
 
-deploy SVN version of Yii 2 project
-
-### SYNOPSIS
+## SYNOPSIS
 
     ./deployer.sh -d TAG [-v] [-n] [-e ENV]
     ./deployer.sh -r TAG [-v] [-n] [-e ENV]
     ./deployer.sh -dev [-v] [-n] [-e ENV]
     ./deployer.sh -h
 
-### DESCRIPTION
+## DESCRIPTION
 
 Deploys the target TAG version of Yii 2 project or rollbacks to the target TAG version. 
 Creates the releases and composer folders. Deployed version is stored in the releases
@@ -33,7 +31,7 @@ Deployed or rollbacked version is symlinked to the Apache host target folder.
 | -e ENV | --env ENV      | sets environment name ENV for init
 | -h     | --help         | help screen
 
-### CONFIGURATION
+## CONFIGURATION
 
 Configuration can be stored in separate file `deployer.cfg` (in the same folder).
 
