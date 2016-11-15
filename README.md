@@ -23,7 +23,7 @@ Run
 In the main `composer.json` file (`/root/.composer/composer.json`) add section
 
     "scripts": {
-        "post-update-cmd": [
+        "post-package-update": [
             "cp -u ./vendor/humandevice/deployer/deployer /usr/local/bin/",
             "chmod +x /usr/local/bin/deployer"
         ]
@@ -31,7 +31,7 @@ In the main `composer.json` file (`/root/.composer/composer.json`) add section
 
 Run from the main composer folder
 
-    composer run-script post-update-cmd
+    composer run-script post-package-update
     
 Now every
 
