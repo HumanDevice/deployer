@@ -2,7 +2,7 @@
     "name": "humandevice/deployer",
     "description": "SVN deployer for Yii 2 apps.",
     "type": "script",
-    "license": "internal",
+    "license": "MIT",
     "scripts": {
         "post-update-cmd": [
             "cp -u ./deployer /usr/local/bin/",
