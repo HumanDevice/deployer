@@ -16,21 +16,13 @@ Copy `deployer` (optionally with `deployer.cfg`) to the project folder.
 
 ## GLOBAL INSTALLATION
 
-In the main `composer.json` file (`/root/.composer/composer.json`) add section
-
-    "scripts": {
-        "post-package-update": "[ -f ./vendor/humandevice/deployer/deployer ] || composer run-script post-update-cmd -d ./vendor/humandevice/deployer"
-    }
-
 Run
 
     composer global require humandevice/deployer
-    
-Now every
 
-    composer global update
-   
-will update `deployer` file as well.
+and then
+
+    composer global run-script post-update-cmd -d ./vendor/humandevice/deployer
 
 ## DESCRIPTION
 
