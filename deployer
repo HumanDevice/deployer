@@ -545,7 +545,7 @@ CREATECONFIG() {
 
 # starts script
 START() {
-    if [[ $MODE -eq 0 ]]; then
+    if [[ $MODE -eq 7 ]]; then
         CREATECONFIG
     elif [[ $MODE -eq 1 ]]; then
         echo "NAME"
@@ -637,7 +637,7 @@ while [[ $# > 0 ]]
 do
     case $1 in
         -c|--config)
-            MODE=0
+            MODE=7
             break
             ;;
         -h|--help)
