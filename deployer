@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v2.1
+# Human Device Yii 2 deployer v2.1.1
 # ========================================================
 # -h, --help for help
 
@@ -547,7 +547,8 @@ CREATECONFIG() {
 UPDATE() {
     echo " > updating deployer in global mode:"
     composer global update humandevice/deployer
-    composer global run-script post-update-cmd -d ./vendor/humandevice/deployer
+    VENDOR=$(composer global config vendor-dir --absolute)
+    composer run-script post-update-cmd -d $VENDOR/humandevice/deployer
     echo ""
 }
 
