@@ -1,4 +1,4 @@
-# deployer v2.0
+# deployer
 
 Deploys SVN version of Yii 2 project
 
@@ -16,22 +16,15 @@ Copy `deployer` (optionally with `deployer.cfg`) to the project folder.
 
 ## GLOBAL INSTALLATION
 
-Run
-
-    composer global require humandevice/deployer
-    
 In the main `composer.json` file (`/root/.composer/composer.json`) add section
 
     "scripts": {
-        "post-package-update": [
-            "cp -u ./vendor/humandevice/deployer/deployer /usr/local/bin/",
-            "chmod +x /usr/local/bin/deployer"
-        ]
+        "post-package-update": "[ -f ./vendor/humandevice/deployer/deployer ] || composer run-script post-update-cmd -d ./vendor/humandevice/deployer"
     }
 
-Run from the main composer folder
+Run
 
-    composer run-script post-package-update
+    composer global require humandevice/deployer
     
 Now every
 
