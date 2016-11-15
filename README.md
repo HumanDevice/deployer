@@ -26,10 +26,6 @@ Run
 Run
 
     deployer -u
-    
-or
-
-    composer global update humandevice/deployer
 
 ## DESCRIPTION
 
