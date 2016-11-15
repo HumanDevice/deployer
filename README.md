@@ -9,6 +9,7 @@ Deploys SVN version of Yii 2 project
     deployer -dev [-v] [-n] [-e ENV]
     deployer -h
     deployer -c
+    deployer -u
     
 ## LOCAL INSTALLATION
 
@@ -23,6 +24,12 @@ Run
 and then
 
     composer global run-script post-update-cmd -d ./vendor/humandevice/deployer
+    
+## GLOBAL UPDATE
+
+Run
+
+    deployer -u
 
 ## DESCRIPTION
 
@@ -46,6 +53,7 @@ Deployed or rollbacked version is symlinked to the Apache host target folder.
 | -e ENV | --env ENV      | sets environment name ENV for init
 | -h     | --help         | help screen
 | -c     | --config       | creates (overwrites) deployer.cfg file
+| -u     | --update       | updates deployer using composer in global mode
 
 ## CONFIGURATION
 
