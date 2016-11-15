@@ -1,13 +1,43 @@
-# deployer v2
+# deployer v2.0
 
 Deploys SVN version of Yii 2 project
 
 ## SYNOPSIS
 
-    ./deployer.sh -d TAG [-v] [-n] [-e ENV]
-    ./deployer.sh -r TAG [-v] [-n] [-e ENV]
-    ./deployer.sh -dev [-v] [-n] [-e ENV]
-    ./deployer.sh -h
+    deployer -d TAG [-v] [-n] [-e ENV]
+    deployer -r TAG [-v] [-n] [-e ENV]
+    deployer -dev [-v] [-n] [-e ENV]
+    deployer -h
+    deployer -c
+    
+## LOCAL INSTALLATION
+
+Copy `deployer` (optionally with `deployer.cfg`) to the project folder.
+
+## GLOBAL INSTALLATION
+
+Run
+
+    composer global require humandevice/deployer
+    
+In the main `composer.json` file (`/root/.composer/composer.json`) add section
+
+    "scripts": {
+        "post-update-cmd": [
+            "cp -u ./vendor/humandevice/deployer/deployer /usr/local/bin/",
+            "chmod +x /usr/local/bin/deployer"
+        ]
+    }
+
+Run from the main composer folder
+
+    composer run-script post-update-cmd
+    
+Now every
+
+    composer global update
+   
+will update `deployer` file as well.
 
 ## DESCRIPTION
 
@@ -30,6 +60,7 @@ Deployed or rollbacked version is symlinked to the Apache host target folder.
 | -n     | --noupdate     | skips composer update part (composer install ignores this option)
 | -e ENV | --env ENV      | sets environment name ENV for init
 | -h     | --help         | help screen
+| -c     | --config       | creates (overwrites) deployer.cfg file
 
 ## CONFIGURATION
 
