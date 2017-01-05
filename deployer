@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v2.1.1
+# Human Device Yii 2 deployer v2.2
 # ========================================================
 # -h, --help for help
 
@@ -554,9 +554,9 @@ UPDATE() {
 
 # starts script
 START() {
-    if [[ $MODE -eq 7 ]]; then
+    if [[ $MODE -eq 6 ]]; then
         CREATECONFIG
-    elif [[ $MODE -eq 8 ]]; then
+    elif [[ $MODE -eq 7 ]]; then
         UPDATE
     elif [[ $MODE -eq 1 ]]; then
         echo "NAME"
@@ -568,6 +568,7 @@ START() {
         echo "    deployer -d TAG [-v] [-n] [-e ENV]"
         echo "    deployer -r TAG [-v] [-n] [-e ENV]"
         echo "    deployer -dev [-v] [-n] [-e ENV]"
+        echo "    deployer -b BRANCH [-v] [-n] [-e ENV]"
         echo "    deployer -h"
         echo "    deployer -c"
         echo ""
@@ -587,6 +588,9 @@ START() {
         echo ""
         echo "    -dev"
         echo "        deploy development version"
+        echo ""
+        echo "    -b BRANCH, --branch BRANCH"
+        echo "        deploy development version from BRANCH branch"
         echo ""
         echo "    -v, --verbose"
         echo "        runs the script in verbose mode where output of svn, composer and init is visible"
@@ -612,7 +616,7 @@ START() {
         echo ""
         echo "COPYRIGHT"
         echo ""
-        echo "    Copyright (c) 2016 Human Device Sp. z o.o."
+        echo "    Copyright (c) 2016-2017 Human Device Sp. z o.o."
         echo ""
     elif [[ $MODE -eq 2 ]]; then
         if [[ "$VERSION" = "" ]]; then
@@ -635,8 +639,14 @@ START() {
         echo "    For help run"
         echo "        deployer -h"
     elif [[ $MODE -eq 5 ]]; then
-        DEPLOYDEV
-    elif [[ $MODE -eq 6 ]]; then
+        if [[ "$SVN_BRANCH" = "" ]]; then
+            echo "    Branch missing."
+            echo "    For help run"
+            echo "        deployer -h"
+        else
+            DEPLOYDEV
+        fi
+    elif [[ $MODE -eq 99 ]]; then
         echo "    Unrecognised option."
         echo "    For help run"
         echo "        deployer -h"
@@ -651,11 +661,11 @@ while [[ $# > 0 ]]
 do
     case $1 in
         -c|--config)
-            MODE=7
+            MODE=6
             break
             ;;
         -u|--update)
-            MODE=8
+            MODE=7
             break
             ;;
         -h|--help)
@@ -697,8 +707,13 @@ do
             VERSION="${2##*/}"
             shift
             ;;
+        -b|--branch)
+            MODE=5
+            SVN_BRANCH="${2##*/}"
+            shift
+            ;;
         *)
-            MODE=6
+            MODE=99
             break
             ;;
     esac

@@ -7,6 +7,7 @@ Deploys SVN version of Yii 2 project
     deployer -d TAG [-v] [-n] [-e ENV]
     deployer -r TAG [-v] [-n] [-e ENV]
     deployer -dev [-v] [-n] [-e ENV]
+    deployer -b BRANCH [-v] [-n] [-e ENV]
     deployer -h
     deployer -c
     deployer -u
@@ -45,17 +46,18 @@ If environment is set to `Production` composer runs with option `--no-dev --opti
 
 Deployed or rollbacked version is symlinked to the Apache host target folder.
 
-| option | alias          | description
-|--------|----------------|-----------------------------------------------------------------------------------
-| -d TAG | --deploy TAG   | deploy TAG version
-| -r TAG | --rollback TAG | rollback to TAG version
-| -dev   |                | deploy development version
-| -v     | --verbose      | runs the script in verbose mode where output of svn, composer and init is visible
-| -n     | --noupdate     | skips composer update part (composer install ignores this option)
-| -e ENV | --env ENV      | sets environment name ENV for init
-| -h     | --help         | help screen
-| -c     | --config       | creates (overwrites) deployer.cfg file
-| -u     | --update       | updates deployer using composer in global mode
+| option    | alias           | description
+|-----------|-----------------|-----------------------------------------------------------------------------------
+| -d TAG    | --deploy TAG    | deploy TAG version
+| -r TAG    | --rollback TAG  | rollback to TAG version
+| -dev      |                 | deploy development version
+| -b BRANCH | --branch BRANCH | deploy development version from BRANCH branch (no starting and ending trailers)
+| -v        | --verbose       | runs the script in verbose mode where output of svn, composer and init is visible
+| -n        | --noupdate      | skips composer update part (composer install ignores this option)
+| -e ENV    | --env ENV       | sets environment name ENV for init
+| -h        | --help          | help screen
+| -c        | --config        | creates (overwrites) deployer.cfg file
+| -u        | --update        | updates deployer using composer in global mode
 
 ## CONFIGURATION
 
