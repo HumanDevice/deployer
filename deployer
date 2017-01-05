@@ -683,7 +683,13 @@ do
             shift
             ;;
         -dev)
-            MODE=5
+            if [[ $MODE -eq 2 ]]; then
+                MODE=4
+            elif [[ $MODE -eq 3 ]]; then
+                MODE=4
+            else
+                MODE=5
+            fi
             ;;
         -d|--deploy)
             if [[ $MODE -eq 5 ]]; then
@@ -708,7 +714,13 @@ do
             shift
             ;;
         -b|--branch)
-            MODE=5
+            if [[ $MODE -eq 2 ]]; then
+                MODE=4
+            elif [[ $MODE -eq 3 ]]; then
+                MODE=4
+            else
+                MODE=5
+            fi
             SVN_BRANCH="$2"
             shift
             ;;
