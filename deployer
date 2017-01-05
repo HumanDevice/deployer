@@ -657,7 +657,7 @@ START() {
     fi
 }
 
-while [[ $# > 0 ]]
+while [[ $# -gt 0 ]]
 do
     case $1 in
         -c|--config)
@@ -679,7 +679,7 @@ do
             COMPOSER_DONT_UPDATE=1
             ;;
         -e|--env)
-            ENV="${2##*/}"
+            ENV="$2"
             shift
             ;;
         -dev)
@@ -693,7 +693,7 @@ do
             else
                 MODE=2
             fi
-            VERSION="${2##*/}"
+            VERSION="$2"
             shift
             ;;
         -r|--rollback)
@@ -704,12 +704,12 @@ do
             else
                 MODE=3
             fi
-            VERSION="${2##*/}"
+            VERSION="$2"
             shift
             ;;
         -b|--branch)
             MODE=5
-            SVN_BRANCH="${2##*/}"
+            SVN_BRANCH="$2"
             shift
             ;;
         *)
