@@ -214,7 +214,7 @@ DOWNLOAD_DEV_RELEASE_SVN() {
 
 # cloning development release GIT folder
 DOWNLOAD_DEV_RELEASE_GIT() {
-    LINE " > cloning development GIT snapshot"
+    LINE " > cloning development GIT branch"
     local CMD="git clone -q -b \"${DEV_BRANCH}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
     if [[ $VERBOSE -eq 1 ]]; then
         CMD="git clone -v -b \"${DEV_BRANCH}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
