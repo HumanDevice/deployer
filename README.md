@@ -1,6 +1,6 @@
 # deployer
 
-Deploys SVN version of Yii 2 project
+Deploys SVN/GIT version of Yii 2 project
 
 ## SYNOPSIS
 
@@ -39,7 +39,7 @@ Run
 Deploys the target TAG version of Yii 2 project or rollbacks to the target TAG version. 
 Creates the releases and composer folders. Deployed version is stored in the releases
 folder under the TAG name. Composer folder stores the vendor folder with composer
-dependencies. TAG version is SVN-imported using provided SVN credentials.
+dependencies. TAG version is SVN-imported or GIT-cloned using provided credentials.
 Script deletes `environments` folder.
 
 If environment is set to `Production` composer runs with option `--no-dev --optimize-autoloader`.
@@ -67,10 +67,11 @@ Configuration can be stored in separate file `deployer.cfg` (in the same folder)
 |------------|----------------------------------------------------------------------------
 | HOST       | Project folder name, this is virtual host target folder.
 | ENV        | Environment name for Yii 2 init command (can be set with -e flag also).
-| SVN_URL    | URL of the SVN server.
-| SVN_USER   | Name of the SVN user with read rights.
-| SVN_PASS   | SVN password for SVN_USER.
-| SVN_BRANCH | SVN branch path for development releases (no starting and ending trailers).
-| RIGHTS     | optional folder rights to be set (use chown syntax owner:group).
+| REPO_TYPE  | Repo type: GIT or SVN.
+| REPO_URL   | URL of the repo server.
+| REPO_USER  | Name of the repo user with read rights.
+| REPO_PASS  | Repo password for REPO_USER.
+| DEV_BRANCH | Repo branch for development releases (no starting and ending trailers).
+| RIGHTS     | Optional folder rights to be set (use chown syntax owner:group).
 | PROJECT    | Project name (for display purposes only).
 

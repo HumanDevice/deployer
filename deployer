@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v2.2
+# Human Device Yii 2 deployer v3
 # ========================================================
 # -h, --help for help
 
@@ -12,13 +12,14 @@ HOST=""
 # default environment name for Yii 2 init
 ENV="Development"
 
-# SVN credentials
-SVN_URL=''
-SVN_USER=''
-SVN_PASS=''
+# SVN/GIT credentials
+REPO_TYPE="GIT"
+REPO_URL=''
+REPO_USER=''
+REPO_PASS=''
 
-# SVN branch path for development release
-SVN_BRANCH='branches/dev'
+# SVN/GIT branch path for development release
+DEV_BRANCH='master'
 
 # folders owner and group if needed (use chown syntax)
 RIGHTS=""
@@ -146,40 +147,106 @@ CHECK_RELEASE_FOLDER() {
     return 0
 }
 
-# downloads production release SVN folder
-DOWNLOAD_PROD_RELEASE() {
-    LINE " > downloading SVN snapshot"
-    local CMD="svn export -q \"${SVN_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
+# exporting production release SVN folder
+DOWNLOAD_PROD_RELEASE_SVN() {
+    LINE " > exporting SVN snapshot"
+    local CMD="svn export -q \"${REPO_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="svn export \"${SVN_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
+        CMD="svn export \"${REPO_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
     fi
     if eval "$CMD"
     then
-        echo "downloaded"
-        if [[ "$RIGHTS" != "" ]]; then
-            chown -R ${RIGHTS} "./${R_FOLDER}/${1}"
-        fi
         return 1
     fi
     return 0
 }
 
-# downloads development release SVN folder
-DOWNLOAD_DEV_RELEASE() {
-    LINE " > downloading development SVN snapshot"
-    local CMD="svn export -q \"${SVN_URL}/${SVN_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
+# cloning production release GIT folder
+DOWNLOAD_PROD_RELEASE_GIT() {
+    LINE " > cloning GIT branch"
+    local CMD="git clone -q -b \"${1}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${1}\""
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="svn export \"${SVN_URL}/${SVN_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${SVN_USER}\" --password '${SVN_PASS}'"
+        CMD="git clone -v -b \"${1}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${1}\""
     fi
     if eval "$CMD"
     then
-        echo "downloaded"
-        if [[ "$RIGHTS" != "" ]]; then
-            chown -R ${RIGHTS} "./${R_FOLDER}/${DN_FOLDER}"
-        fi
         return 1
     fi
     return 0
+}
+
+# downloads production release folder
+DOWNLOAD_PROD_RELEASE() {
+    if [[ "$REPO_TYPE" = "GIT" ]]; then
+        DOWNLOAD_PROD_RELEASE_GIT "$1"
+        if [[ $? -eq 0 ]]; then
+            return 0
+        fi
+    elif [[ "$REPO_TYPE" = "SVN" ]]; then
+        DOWNLOAD_PROD_RELEASE_SVN "$1"
+        if [[ $? -eq 0 ]]; then
+            return 0
+        fi
+    else
+        echo " > UNSUPPORTED REPO TYPE: only GIT and SVN are allowed! > exit with error"
+        return 0
+    fi
+    echo "done"
+    if [[ "$RIGHTS" != "" ]]; then
+        chown -R ${RIGHTS} "./${R_FOLDER}/${1}"
+    fi
+    return 1
+}
+
+# exporting development release SVN folder
+DOWNLOAD_DEV_RELEASE_SVN() {
+    LINE " > exporting development SVN snapshot"
+    local CMD="svn export -q \"${REPO_URL}/${DEV_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
+    if [[ $VERBOSE -eq 1 ]]; then
+        CMD="svn export \"${REPO_URL}/${DEV_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
+    fi
+    if eval "$CMD"
+    then
+        return 1
+    fi
+    return 0
+}
+
+# cloning development release GIT folder
+DOWNLOAD_DEV_RELEASE_GIT() {
+    LINE " > cloning development GIT branch"
+    local CMD="git clone -q -b \"${DEV_BRANCH}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
+    if [[ $VERBOSE -eq 1 ]]; then
+        CMD="git clone -v -b \"${DEV_BRANCH}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
+    fi
+    if eval "$CMD"
+    then
+        return 1
+    fi
+    return 0
+}
+
+# downloads development release folder
+DOWNLOAD_DEV_RELEASE() {
+    if [[ "$REPO_TYPE" = "GIT" ]]; then
+        DOWNLOAD_DEV_RELEASE_GIT
+        if [[ $? -eq 0 ]]; then
+            return 0
+        fi
+    elif [[ "$REPO_TYPE" = "SVN" ]]; then
+        DOWNLOAD_DEV_RELEASE_SVN
+        if [[ $? -eq 0 ]]; then
+            return 0
+        fi
+    else
+        echo " > UNSUPPORTED REPO TYPE: only GIT and SVN are allowed! > exit with error"
+        return 0
+    fi
+    echo "done"
+    if [[ "$RIGHTS" != "" ]]; then
+        chown -R ${RIGHTS} "./${R_FOLDER}/${DN_FOLDER}"
+    fi
+    return 1
 }
 
 # installs composer dependencies
@@ -512,8 +579,8 @@ DEPLOYDEV() {
 # creates config file
 CREATECONFIG() {
     echo "This will create new deployer.cfg file and overwrite existing one."
-    read -p "Are you sure? " -n 1 -r
-    if [[ $REPLY =~ ^[Yy]$ ]]
+    read -p "Are you sure? (Y/n) " -n 1 -r
+    if [[ $REPLY =~ ^[Nn]$ ]]
     then
         echo ""
         LINE " > creating deployer.cfg file"
@@ -524,13 +591,14 @@ CREATECONFIG() {
         echo "# default environment name for Yii 2 init" >> ./deployer.cfg
         echo "ENV=\"change me\"" >> ./deployer.cfg
         echo "" >> ./deployer.cfg
-        echo "# SVN credentials" >> ./deployer.cfg
-        echo "SVN_URL='change me'" >> ./deployer.cfg
-        echo "SVN_USER='change me'" >> ./deployer.cfg
-        echo "SVN_PASS='change me'" >> ./deployer.cfg
+        echo "# SVN/GIT credentials" >> ./deployer.cfg
+        echo "REPO_TYPE='GIT'" >> ./deployer.cfg
+        echo "REPO_URL='change me'" >> ./deployer.cfg
+        echo "REPO_USER='change me'" >> ./deployer.cfg
+        echo "REPO_PASS='change me'" >> ./deployer.cfg
         echo "" >> ./deployer.cfg
-        echo "# SVN branch path for development release" >> ./deployer.cfg
-        echo "SVN_BRANCH='branches/dev'" >> ./deployer.cfg
+        echo "# SVN/GIT branch path for development release" >> ./deployer.cfg
+        echo "DEV_BRANCH='master'" >> ./deployer.cfg
         echo "" >> ./deployer.cfg
         echo "# folders owner and group if needed (use chown syntax)" >> ./deployer.cfg
         echo "RIGHTS=''" >> ./deployer.cfg
@@ -557,11 +625,11 @@ START() {
     if [[ $MODE -eq 6 ]]; then
         CREATECONFIG
     elif [[ $MODE -eq 7 ]]; then
-        UPDATE
+        trap UPDATE SIGHUP SIGINT SIGTERM
     elif [[ $MODE -eq 1 ]]; then
         echo "NAME"
         echo ""
-        echo "    deployer - deploy SVN version of Yii 2 project"
+        echo "    deployer v3 - deploy SVN/GIT version of Yii 2 project"
         echo ""
         echo "SYNOPSIS"
         echo ""
@@ -571,13 +639,14 @@ START() {
         echo "    deployer -b BRANCH [-v] [-n] [-e ENV]"
         echo "    deployer -h"
         echo "    deployer -c"
+        echo "    deployer -u"
         echo ""
         echo "DESCRIPTION"
         echo ""
         echo "    Deploys the target TAG version of Yii 2 project or rollbacks to the target TAG version."
         echo "    Creates the releases and composer folders. Deployed version is stored in the releases"
         echo "    folder under the TAG name. Composer folder stores the vendor folder with composer "
-        echo "    dependencies. TAG version is SVN imported using provided SVN credentials."
+        echo "    dependencies. TAG version is SVN imported or GIT cloned using provided credentials."
         echo "    Deployed or rollbacked version is symlinked to the Apache host target folder."
         echo ""
         echo "    -d TAG, --deploy TAG"
@@ -593,7 +662,7 @@ START() {
         echo "        deploy development version from BRANCH branch"
         echo ""
         echo "    -v, --verbose"
-        echo "        runs the script in verbose mode where output of svn, composer and init is visible"
+        echo "        runs the script in verbose mode where output is visible"
         echo ""
         echo "    -n, --noupdate"
         echo "        skips composer update part (composer install ignores this option)"
@@ -639,7 +708,7 @@ START() {
         echo "    For help run"
         echo "        deployer -h"
     elif [[ $MODE -eq 5 ]]; then
-        if [[ "$SVN_BRANCH" = "" ]]; then
+        if [[ "$DEV_BRANCH" = "" ]]; then
             echo "    Branch missing."
             echo "    For help run"
             echo "        deployer -h"
@@ -721,7 +790,7 @@ do
             else
                 MODE=5
             fi
-            SVN_BRANCH="$2"
+            DEV_BRANCH="$2"
             shift
             ;;
         *)
