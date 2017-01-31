@@ -54,7 +54,7 @@ VERSION=""
 VERBOSE=0
 USING_TEMPORARY_COMPOSER=0
 MODE=0
-COMPOSER_DONT_UPDATE=0
+COMPOSER_FORCE_UPDATE=0
 DELETE_ENVS=1
 
 # generate line with dots
@@ -150,9 +150,9 @@ CHECK_RELEASE_FOLDER() {
 # exporting production release SVN folder
 DOWNLOAD_PROD_RELEASE_SVN() {
     LINE " > exporting SVN snapshot"
-    local CMD="svn export -q \"${REPO_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
+    local CMD="svn export -q \"https://${REPO_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="svn export \"${REPO_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
+        CMD="svn export \"https://${REPO_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
     fi
     if eval "$CMD"
     then
@@ -164,9 +164,9 @@ DOWNLOAD_PROD_RELEASE_SVN() {
 # cloning production release GIT folder
 DOWNLOAD_PROD_RELEASE_GIT() {
     LINE " > cloning GIT branch"
-    local CMD="git clone -q -b \"${1}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${1}\""
+    local CMD="git clone -b \"${1}\" -q -c advice.detachedHead=false --depth 1 'https://${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${1}\""
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="git clone -v -b \"${1}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${1}\""
+        CMD="git clone -b \"${1}\" -v --depth 1 'https://${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${1}\""
     fi
     if eval "$CMD"
     then
@@ -182,6 +182,7 @@ DOWNLOAD_PROD_RELEASE() {
         if [[ $? -eq 0 ]]; then
             return 0
         fi
+        rm -rf "./${R_FOLDER}/${1}/.git"
     elif [[ "$REPO_TYPE" = "SVN" ]]; then
         DOWNLOAD_PROD_RELEASE_SVN "$1"
         if [[ $? -eq 0 ]]; then
@@ -201,9 +202,9 @@ DOWNLOAD_PROD_RELEASE() {
 # exporting development release SVN folder
 DOWNLOAD_DEV_RELEASE_SVN() {
     LINE " > exporting development SVN snapshot"
-    local CMD="svn export -q \"${REPO_URL}/${DEV_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
+    local CMD="svn export -q \"https://${REPO_URL}/${DEV_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="svn export \"${REPO_URL}/${DEV_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
+        CMD="svn export \"https://${REPO_URL}/${DEV_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
     fi
     if eval "$CMD"
     then
@@ -215,9 +216,9 @@ DOWNLOAD_DEV_RELEASE_SVN() {
 # cloning development release GIT folder
 DOWNLOAD_DEV_RELEASE_GIT() {
     LINE " > cloning development GIT branch"
-    local CMD="git clone -q -b \"${DEV_BRANCH}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
+    local CMD="git clone -b \"${DEV_BRANCH}\" -q -c advice.detachedHead=false --depth 1 'https://${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
     if [[ $VERBOSE -eq 1 ]]; then
-        CMD="git clone -v -b \"${DEV_BRANCH}\" --single-branch '${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
+        CMD="git clone -b \"${DEV_BRANCH}\" -v --depth 1 'https://${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
     fi
     if eval "$CMD"
     then
@@ -233,6 +234,7 @@ DOWNLOAD_DEV_RELEASE() {
         if [[ $? -eq 0 ]]; then
             return 0
         fi
+        rm -rf "./${R_FOLDER}/${DN_FOLDER}/.git"
     elif [[ "$REPO_TYPE" = "SVN" ]]; then
         DOWNLOAD_DEV_RELEASE_SVN
         if [[ $? -eq 0 ]]; then
@@ -277,8 +279,12 @@ COMPOSER_INSTALL() {
 
 # updates composer dependencies
 COMPOSER_UPDATE() {
-    if [[ $COMPOSER_DONT_UPDATE -eq 1 ]]; then
-        return 1
+    if [[ $COMPOSER_FORCE_UPDATE -eq 0 ]]; then
+        local LMT=$(expr $(expr $(date +%s) - $(stat -c %Y "./${C_FOLDER}/vendor")) / 3600)
+        if [[ $LMT -lt 24 ]]; then
+            echo " > skipping composer update (less than 24 hours since last check)"
+            return 1
+        fi
     fi
     LINE " > updating composer dependencies"
     cd "./${C_FOLDER}"
@@ -580,11 +586,10 @@ DEPLOYDEV() {
 CREATECONFIG() {
     echo "This will create new deployer.cfg file and overwrite existing one."
     read -p "Are you sure? (Y/n) " -n 1 -r
-    if [[ $REPLY =~ ^[Nn]$ ]]
+    if ! [[ $REPLY =~ ^[Nn]$ ]]
     then
         echo ""
         LINE " > creating deployer.cfg file"
-    
         echo "# project host folder name" > ./deployer.cfg
         echo "HOST=\"change me\"" >> ./deployer.cfg
         echo "" >> ./deployer.cfg
@@ -605,7 +610,6 @@ CREATECONFIG() {
         echo "" >> ./deployer.cfg
         echo "# project name (just for display)" >> ./deployer.cfg
         echo "PROJECT=\"change me\"" >> ./deployer.cfg
-    
         echo "done"
     fi
     echo ""
@@ -625,7 +629,7 @@ START() {
     if [[ $MODE -eq 6 ]]; then
         CREATECONFIG
     elif [[ $MODE -eq 7 ]]; then
-        trap UPDATE SIGHUP SIGINT SIGTERM
+        trap UPDATE 0
     elif [[ $MODE -eq 1 ]]; then
         echo "NAME"
         echo ""
@@ -633,10 +637,10 @@ START() {
         echo ""
         echo "SYNOPSIS"
         echo ""
-        echo "    deployer -d TAG [-v] [-n] [-e ENV]"
-        echo "    deployer -r TAG [-v] [-n] [-e ENV]"
-        echo "    deployer -dev [-v] [-n] [-e ENV]"
-        echo "    deployer -b BRANCH [-v] [-n] [-e ENV]"
+        echo "    deployer -d TAG [-v] [-f] [-e ENV]"
+        echo "    deployer -r TAG [-v] [-f] [-e ENV]"
+        echo "    deployer -dev [-v] [-f] [-e ENV]"
+        echo "    deployer -b BRANCH [-v] [-f] [-e ENV]"
         echo "    deployer -h"
         echo "    deployer -c"
         echo "    deployer -u"
@@ -664,8 +668,8 @@ START() {
         echo "    -v, --verbose"
         echo "        runs the script in verbose mode where output is visible"
         echo ""
-        echo "    -n, --noupdate"
-        echo "        skips composer update part (composer install ignores this option)"
+        echo "    -f, --forceupdate"
+        echo "        forces composer update"
         echo ""
         echo "    -e ENV, --env ENV"
         echo "        sets environment name ENV for init"
@@ -744,8 +748,8 @@ do
         -v|--verbose)
             VERBOSE=1
             ;;
-        -n|--noupdate)
-            COMPOSER_DONT_UPDATE=1
+        -f|--forceupdate)
+            COMPOSER_FORCE_UPDATE=1
             ;;
         -e|--env)
             ENV="$2"

@@ -4,10 +4,10 @@ Deploys SVN/GIT version of Yii 2 project
 
 ## SYNOPSIS
 
-    deployer -d TAG [-v] [-n] [-e ENV]
-    deployer -r TAG [-v] [-n] [-e ENV]
-    deployer -dev [-v] [-n] [-e ENV]
-    deployer -b BRANCH [-v] [-n] [-e ENV]
+    deployer -d TAG [-v] [-f] [-e ENV]
+    deployer -r TAG [-v] [-f] [-e ENV]
+    deployer -dev [-v] [-f] [-e ENV]
+    deployer -b BRANCH [-v] [-f] [-e ENV]
     deployer -h
     deployer -c
     deployer -u
@@ -53,7 +53,7 @@ Deployed or rollbacked version is symlinked to the Apache host target folder.
 | -dev      |                 | deploy development version
 | -b BRANCH | --branch BRANCH | deploy development version from BRANCH branch (no starting and ending trailers)
 | -v        | --verbose       | runs the script in verbose mode where output of svn, composer and init is visible
-| -n        | --noupdate      | skips composer update part (composer install ignores this option)
+| -f        | --forceupdate   | forces composer update
 | -e ENV    | --env ENV       | sets environment name ENV for init
 | -h        | --help          | help screen
 | -c        | --config        | creates (overwrites) deployer.cfg file
