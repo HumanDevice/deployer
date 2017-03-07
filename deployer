@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v3
+# Human Device Yii 2 deployer v3.1
 # ========================================================
 # -h, --help for help
 
@@ -70,6 +70,8 @@ END_MARKER() {
         if rm -rf "./${C_TEMP_FOLDER}"
         then
             echo "deleted"
+        else
+            echo "ERROR"
         fi
     fi
     if [[ $DELETE_ENVS -eq 1 ]]; then
@@ -77,6 +79,8 @@ END_MARKER() {
         if rm -rf "./${HOST}/environments"
         then
             echo "deleted"
+        else
+            echo "ERROR"
         fi
     fi
     echo "FINISHED at $(date +"%r")."
@@ -87,12 +91,22 @@ CREATE_FOLDER() {
     LINE "$1"
     if mkdir "$2"
     then
-        chmod 0775 "$2"
-        if [[ "$RIGHTS" != "" ]]; then
-            chown ${RIGHTS} "$2"
+        if chmod 0775 "$2"
+        then
+            if [[ "$RIGHTS" != "" ]]; then
+                if chown ${RIGHTS} "$2"
+                then
+                    :
+                else
+                    echo "ERROR"
+                    return 0
+                fi
+            fi
+            echo "created"
+            return 1
+        else
+            echo "ERROR"
         fi
-        echo "created"
-        return 1
     fi
     return 0
 }
@@ -512,7 +526,12 @@ MOVEDEV() {
     if cp -a "./${R_FOLDER}/${DN_FOLDER}" "./${R_FOLDER}/${DC_FOLDER}"
     then
         echo "done"
-        rm -rf "./${R_FOLDER}/${DN_FOLDER}"
+        if rm -rf "./${R_FOLDER}/${DN_FOLDER}"
+        then
+            :
+        else
+            echo "ERROR"
+        fi
     else
         return 0
     fi
@@ -598,7 +617,7 @@ CREATECONFIG() {
         echo "" >> ./deployer.cfg
         echo "# SVN/GIT credentials" >> ./deployer.cfg
         echo "REPO_TYPE='GIT'" >> ./deployer.cfg
-        echo "REPO_URL='change me'" >> ./deployer.cfg
+        echo "REPO_URL='change me (omit https:// part)'" >> ./deployer.cfg
         echo "REPO_USER='change me'" >> ./deployer.cfg
         echo "REPO_PASS='change me'" >> ./deployer.cfg
         echo "" >> ./deployer.cfg
@@ -633,7 +652,7 @@ START() {
     elif [[ $MODE -eq 1 ]]; then
         echo "NAME"
         echo ""
-        echo "    deployer v3 - deploy SVN/GIT version of Yii 2 project"
+        echo "    deployer v3.1 - deploy SVN/GIT version of Yii 2 project"
         echo ""
         echo "SYNOPSIS"
         echo ""
