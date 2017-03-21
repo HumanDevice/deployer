@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v3.2
+# Human Device Yii 2 deployer v3.3
 # ========================================================
 # -h, --help for help
 
@@ -657,12 +657,34 @@ CREATECONFIG() {
     echo ""
 }
 
+# checks required permissions
+CHECKPERM() {
+    if ! [[ -x "$1" ]]; then
+        return 0
+    elif ! [[ -r "$1" ]]; then
+        return 0
+    elif ! [[ -r "${1}/deployer" ]]; then
+        return 0
+    elif ! [[ -x "/usr/local/bin/" ]]; then
+        return 0
+    elif ! [[ -w "/usr/local/bin/" ]]; then
+        return 0
+    fi
+    return 1
+}
+
 # updates deployer
 UPDATE() {
     echo " > updating deployer in global mode:"
     composer global update humandevice/deployer
-    VENDOR=$(composer global config vendor-dir --absolute)
-    composer run-script post-update-cmd -d $VENDOR/humandevice/deployer
+    local VENDOR=$(composer global config vendor-dir --absolute)
+    local PERM=""
+    CHECKPERM "$VENDOR/humandevice/deployer"
+    if [[ $? -eq 0 ]]; then
+        PERM="sudo"
+    fi
+    $PERM cp -u $VENDOR/humandevice/deployer/deployer /usr/local/bin/
+    $PERM chmod +x /usr/local/bin/deployer
     echo ""
 }
 
@@ -675,7 +697,7 @@ START() {
     elif [[ $MODE -eq 1 ]]; then
         echo "NAME"
         echo ""
-        echo "    deployer v3.2 - deploy SVN/GIT version of Yii 2 project"
+        echo "    deployer v3.3 - deploy SVN/GIT version of Yii 2 project"
         echo ""
         echo "SYNOPSIS"
         echo ""
