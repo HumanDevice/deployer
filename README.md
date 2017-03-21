@@ -14,7 +14,7 @@ Deploys SVN/GIT version of Yii 2 project
 
 ## LOCAL INSTALLATION
 
-Copy `deployer` (optionally with `deployer.cfg`) to the project folder.
+Copy `deployer` to the project folder.
 
 ## GLOBAL INSTALLATION
 
@@ -33,6 +33,10 @@ where `COMPOSER_VENDOR` is the vendor composer folder. You can find it by runnin
 Run
 
     deployer -u
+
+## CONFIGURATION
+
+Run `deployer -c` to generate configuration file and set all variables there.
 
 ## DESCRIPTION
 
