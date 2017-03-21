@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v3.3
+# Human Device Yii 2 deployer v3.3.1
 # ========================================================
 # -h, --help for help
 
@@ -683,9 +683,11 @@ UPDATE() {
     if [[ $? -eq 0 ]]; then
         PERM="sudo"
     fi
+    echo " > copying deployer file to /usr/local/bin/"
     $PERM cp -u $VENDOR/humandevice/deployer/deployer /usr/local/bin/
+    echo " > setting deployer file executable"
     $PERM chmod +x /usr/local/bin/deployer
-    echo ""
+    echo " > deployer updated"
 }
 
 # starts script
@@ -697,7 +699,7 @@ START() {
     elif [[ $MODE -eq 1 ]]; then
         echo "NAME"
         echo ""
-        echo "    deployer v3.3 - deploy SVN/GIT version of Yii 2 project"
+        echo "    deployer v3.3.1 - deploy SVN/GIT version of Yii 2 project"
         echo ""
         echo "SYNOPSIS"
         echo ""
