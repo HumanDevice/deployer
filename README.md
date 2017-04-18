@@ -58,7 +58,7 @@ Deployed or rollbacked version is symlinked to the Apache host target folder.
 | -b BRANCH | --branch BRANCH | deploy development version from BRANCH branch (no starting and ending trailers)
 | -v        | --verbose       | runs the script in verbose mode where output of svn, composer and init is visible
 | -s        | --skipmigrate   | skips the migration process
-| -f        | --forceupdate   | forces composer update
+| -f        | --forceinstall  | forces composer install
 | -e ENV    | --env ENV       | sets environment name ENV for init
 | -h        | --help          | help screen
 | -c        | --config        | creates (overwrites) deployer.cfg file

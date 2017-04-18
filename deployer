@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v3.3.2
+# Human Device Yii 2 deployer v3.3.3
 # ========================================================
 # -h, --help for help
 
@@ -54,7 +54,7 @@ VERSION=""
 VERBOSE=0
 USING_TEMPORARY_COMPOSER=0
 MODE=0
-COMPOSER_FORCE_UPDATE=0
+COMPOSER_FORCE_INSTALL=0
 DELETE_ENVS=1
 SKIP_MIG=0
 
@@ -66,7 +66,7 @@ LINE() {
 
 # cleans temporary folder
 END_MARKER() {
-    if [[ $USING_TEMPORARY_COMPOSER -eq 1 ]]; then
+    if [[ ${USING_TEMPORARY_COMPOSER} -eq 1 ]]; then
         LINE " > deleting temporary composer folder"
         if rm -rf "./${C_TEMP_FOLDER}"
         then
@@ -75,7 +75,7 @@ END_MARKER() {
             echo "ERROR"
         fi
     fi
-    if [[ $DELETE_ENVS -eq 1 ]]; then
+    if [[ ${DELETE_ENVS} -eq 1 ]]; then
         LINE " > deleting environments folder"
         if rm -rf "./${HOST}/environments"
         then
@@ -166,10 +166,10 @@ CHECK_RELEASE_FOLDER() {
 DOWNLOAD_PROD_RELEASE_SVN() {
     LINE " > exporting SVN snapshot"
     local CMD="svn export -q \"https://${REPO_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
-    if [[ $VERBOSE -eq 1 ]]; then
+    if [[ ${VERBOSE} -eq 1 ]]; then
         CMD="svn export \"https://${REPO_URL}/tags/${1}\" \"./${R_FOLDER}/${1}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
     fi
-    if eval "$CMD"
+    if eval "${CMD}"
     then
         return 1
     fi
@@ -180,10 +180,10 @@ DOWNLOAD_PROD_RELEASE_SVN() {
 DOWNLOAD_PROD_RELEASE_GIT() {
     LINE " > cloning GIT branch"
     local CMD="git clone -b \"${1}\" -q -c advice.detachedHead=false --depth 1 'https://${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${1}\""
-    if [[ $VERBOSE -eq 1 ]]; then
+    if [[ ${VERBOSE} -eq 1 ]]; then
         CMD="git clone -b \"${1}\" -v --depth 1 'https://${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${1}\""
     fi
-    if eval "$CMD"
+    if eval "${CMD}"
     then
         return 1
     fi
@@ -218,10 +218,10 @@ DOWNLOAD_PROD_RELEASE() {
 DOWNLOAD_DEV_RELEASE_SVN() {
     LINE " > exporting development SVN snapshot"
     local CMD="svn export -q \"https://${REPO_URL}/${DEV_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
-    if [[ $VERBOSE -eq 1 ]]; then
+    if [[ ${VERBOSE} -eq 1 ]]; then
         CMD="svn export \"https://${REPO_URL}/${DEV_BRANCH}\" \"./${R_FOLDER}/${DN_FOLDER}\" --no-auth-cache --non-interactive --trust-server-cert --username \"${REPO_USER}\" --password '${REPO_PASS}'"
     fi
-    if eval "$CMD"
+    if eval "${CMD}"
     then
         return 1
     fi
@@ -232,10 +232,10 @@ DOWNLOAD_DEV_RELEASE_SVN() {
 DOWNLOAD_DEV_RELEASE_GIT() {
     LINE " > cloning development GIT branch"
     local CMD="git clone -b \"${DEV_BRANCH}\" -q -c advice.detachedHead=false --depth 1 'https://${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
-    if [[ $VERBOSE -eq 1 ]]; then
+    if [[ ${VERBOSE} -eq 1 ]]; then
         CMD="git clone -b \"${DEV_BRANCH}\" -v --depth 1 'https://${REPO_USER}:${REPO_PASS}@${REPO_URL}' \"./${R_FOLDER}/${DN_FOLDER}\""
     fi
-    if eval "$CMD"
+    if eval "${CMD}"
     then
         return 1
     fi
@@ -268,52 +268,30 @@ DOWNLOAD_DEV_RELEASE() {
 
 # installs composer dependencies
 COMPOSER_INSTALL() {
+    if [[ ${COMPOSER_FORCE_INSTALL} -eq 0 ]]; then
+        local LMT=$(expr $(expr $(date +%s) - $(stat -c %Y "./${C_FOLDER}/vendor")) / 3600)
+        if [[ ${LMT} -lt 24 ]]; then
+            echo " > skipping composer install (less than 24 hours since last check)"
+            return 1
+        fi
+    fi
     LINE " > installing composer dependencies"
-    if [[ $USING_TEMPORARY_COMPOSER -eq 1 ]]; then
+    if [[ ${USING_TEMPORARY_COMPOSER} -eq 1 ]]; then
         cd "./${C_TEMP_FOLDER}"
     else
         cd "./${C_FOLDER}"
     fi
     local CMD="composer install -q"
-    if [[ $VERBOSE -eq 1 ]]; then
+    if [[ ${VERBOSE} -eq 1 ]]; then
         CMD="composer install"
     fi
     local NODEV=""
     if [[ "$ENV" = "Production" ]]; then
         NODEV="--no-dev --optimize-autoloader"
     fi
-    if eval "$CMD $NODEV"
+    if eval "${CMD} ${NODEV}"
     then
         echo "installed"
-        cd ..
-        return 1
-    fi
-    cd ..
-    return 0
-}
-
-# updates composer dependencies
-COMPOSER_UPDATE() {
-    if [[ $COMPOSER_FORCE_UPDATE -eq 0 ]]; then
-        local LMT=$(expr $(expr $(date +%s) - $(stat -c %Y "./${C_FOLDER}/vendor")) / 3600)
-        if [[ $LMT -lt 24 ]]; then
-            echo " > skipping composer update (less than 24 hours since last check)"
-            return 1
-        fi
-    fi
-    LINE " > updating composer dependencies"
-    cd "./${C_FOLDER}"
-    local CMD="composer update -q"
-    if [[ $VERBOSE -eq 1 ]]; then
-        CMD="composer update"
-    fi
-    local NODEV=""
-    if [[ "$ENV" = "Production" ]]; then
-        NODEV="--no-dev --optimize-autoloader"
-    fi
-    if eval "$CMD $NODEV"
-    then
-        echo "updated"
         cd ..
         return 1
     fi
@@ -341,6 +319,7 @@ CHECK_VENDOR() {
         if cp "./${R_FOLDER}/$1/composer.json" "./${C_FOLDER}"
         then
             echo "copied"
+            COMPOSER_FORCE_INSTALL=1
             COMPOSER_INSTALL
             if [[ $? -eq 0 ]]; then
                 return 0
@@ -351,7 +330,7 @@ CHECK_VENDOR() {
         LINE " > comparing deployed and vendor composer.json versions"
         if [[ $(stat -c%s "./${C_FOLDER}/composer.json") -eq $(stat -c%s "./${R_FOLDER}/${1}/composer.json") ]]; then
             echo "matching"
-            COMPOSER_UPDATE
+            COMPOSER_INSTALL
             if [[ $? -eq 0 ]]; then
                 return 0
             fi
@@ -367,6 +346,7 @@ CHECK_VENDOR() {
             if cp "./${R_FOLDER}/${1}/composer.json" "./${C_TEMP_FOLDER}"
             then
                 echo "copied"
+                COMPOSER_FORCE_INSTALL=1
                 COMPOSER_INSTALL
                 if [[ $? -eq 0 ]]; then
                     return 0
@@ -382,10 +362,10 @@ CHECK_VENDOR() {
 SYMLINK() {
     LINE " > symlinking vendor folder to release $1"
     local CMD="ln -s \"./../../${C_FOLDER}/vendor\" \"./${R_FOLDER}/${1}/vendor\""
-    if [[ $USING_TEMPORARY_COMPOSER -eq 1 ]]; then
+    if [[ ${USING_TEMPORARY_COMPOSER} -eq 1 ]]; then
         CMD="ln -s \"./../../${C_TEMP_FOLDER}/vendor\" \"./${R_FOLDER}/${1}/vendor\""
     fi
-    if eval "$CMD"
+    if eval "${CMD}"
     then
         echo "done"
         return 1
@@ -397,10 +377,10 @@ SYMLINK() {
 INIT() {
     LINE " > running Yii 2 init for ${ENV}"
     local CMD="php \"./${R_FOLDER}/${1}/init\" --env=${ENV} --overwrite=All >/dev/null"
-    if [[ $VERBOSE -eq 1 ]]; then
+    if [[ ${VERBOSE} -eq 1 ]]; then
         CMD="php \"./${R_FOLDER}/${1}/init\" --env=${ENV} --overwrite=All"
     fi
-    if eval "$CMD"
+    if eval "${CMD}"
     then
         echo "done"
         return 1
@@ -410,16 +390,16 @@ INIT() {
 
 # starts Yii 2 migration
 MIGRATE() {
-    if [[ $SKIP_MIG -eq 1 ]]; then
+    if [[ ${SKIP_MIG} -eq 1 ]]; then
         echo " > skipping migration"
         return 1
     else
         LINE " > running Yii 2 migration"
         local CMD="php \"./${R_FOLDER}/${1}/yii\" migrate --interactive=0 >/dev/null"
-        if [[ $VERBOSE -eq 1 ]]; then
+        if [[ ${VERBOSE} -eq 1 ]]; then
             CMD="php \"./${R_FOLDER}/${1}/yii\" migrate"
         fi
-        if eval "$CMD"
+        if eval "${CMD}"
         then
             echo "done"
             return 1
@@ -430,7 +410,7 @@ MIGRATE() {
 
 # switches temporary composer folder
 SWITCH_TEMP_COMPOSER() {
-    if [[ $USING_TEMPORARY_COMPOSER -eq 1 ]]; then
+    if [[ ${USING_TEMPORARY_COMPOSER} -eq 1 ]]; then
         if rm "./${R_FOLDER}/${1}/vendor"
         then
             if rm -rf "./${C_FOLDER}"
@@ -684,29 +664,29 @@ UPDATE() {
         PERM="sudo"
     fi
     echo " > copying deployer file to /usr/local/bin/"
-    $PERM cp -u $VENDOR/humandevice/deployer/deployer /usr/local/bin/
+    ${PERM} cp -u ${VENDOR}/humandevice/deployer/deployer /usr/local/bin/
     echo " > setting deployer file executable"
-    $PERM chmod +x /usr/local/bin/deployer
+    ${PERM} chmod +x /usr/local/bin/deployer
     echo " > deployer updated"
 }
 
 # starts script
 START() {
-    if [[ $MODE -eq 6 ]]; then
+    if [[ ${MODE} -eq 6 ]]; then
         CREATECONFIG
-    elif [[ $MODE -eq 7 ]]; then
+    elif [[ ${MODE} -eq 7 ]]; then
         trap UPDATE 0
-    elif [[ $MODE -eq 1 ]]; then
+    elif [[ ${MODE} -eq 1 ]]; then
         echo "NAME"
         echo ""
-        echo "    deployer v3.3.2 - deploy SVN/GIT version of Yii 2 project"
+        echo "    deployer v3.3.3 - deploy SVN/GIT version of Yii 2 project"
         echo ""
         echo "SYNOPSIS"
         echo ""
-        echo "    deployer -d TAG [-v] [-f] [-e ENV]"
+        echo "    deployer -d TAG [-v] [-f] [-s] [-e ENV]"
         echo "    deployer -r TAG [-v] [-f] [-e ENV]"
-        echo "    deployer -dev [-v] [-f] [-e ENV]"
-        echo "    deployer -b BRANCH [-v] [-f] [-e ENV]"
+        echo "    deployer -dev [-v] [-f] [-s] [-e ENV]"
+        echo "    deployer -b BRANCH [-v] [-f] [-s] [-e ENV]"
         echo "    deployer -h"
         echo "    deployer -c"
         echo "    deployer -u"
@@ -734,8 +714,8 @@ START() {
         echo "    -v, --verbose"
         echo "        runs the script in verbose mode where output is visible"
         echo ""
-        echo "    -f, --forceupdate"
-        echo "        forces composer update"
+        echo "    -f, --forceinstall"
+        echo "        forces composer install"
         echo ""
         echo "    -s, --skipmigrate"
         echo "        skips migration update"
@@ -760,27 +740,27 @@ START() {
         echo ""
         echo "    Copyright (c) 2016-2017 Human Device Sp. z o.o."
         echo ""
-    elif [[ $MODE -eq 2 ]]; then
+    elif [[ ${MODE} -eq 2 ]]; then
         if [[ "$VERSION" = "" ]]; then
             echo "    Version tag missing."
             echo "    For help run"
             echo "        deployer -h"
         else
-            DEPLOY "$VERSION"
+            DEPLOY
         fi
-    elif [[ $MODE -eq 3 ]]; then
+    elif [[ ${MODE} -eq 3 ]]; then
         if [[ "$VERSION" = "" ]]; then
             echo "    Version tag missing."
             echo "    For help run"
             echo "        deployer -h"
         else
-            ROLLBACK "$VERSION"
+            ROLLBACK
         fi
-    elif [[ $MODE -eq 4 ]]; then
+    elif [[ ${MODE} -eq 4 ]]; then
         echo "    You can not run deploy, rollback and development deploy at the same time."
         echo "    For help run"
         echo "        deployer -h"
-    elif [[ $MODE -eq 5 ]]; then
+    elif [[ ${MODE} -eq 5 ]]; then
         if [[ "$DEV_BRANCH" = "" ]]; then
             echo "    Branch missing."
             echo "    For help run"
@@ -788,7 +768,7 @@ START() {
         else
             DEPLOYDEV
         fi
-    elif [[ $MODE -eq 99 ]]; then
+    elif [[ ${MODE} -eq 99 ]]; then
         echo "    Unrecognised option."
         echo "    For help run"
         echo "        deployer -h"
@@ -817,8 +797,8 @@ do
         -v|--verbose)
             VERBOSE=1
             ;;
-        -f|--forceupdate)
-            COMPOSER_FORCE_UPDATE=1
+        -f|--forceinstall)
+            COMPOSER_FORCE_INSTALL=1
             ;;
         -s|--skipmigrate)
             SKIP_MIG=1
@@ -828,18 +808,18 @@ do
             shift
             ;;
         -dev)
-            if [[ $MODE -eq 2 ]]; then
+            if [[ ${MODE} -eq 2 ]]; then
                 MODE=4
-            elif [[ $MODE -eq 3 ]]; then
+            elif [[ ${MODE} -eq 3 ]]; then
                 MODE=4
             else
                 MODE=5
             fi
             ;;
         -d|--deploy)
-            if [[ $MODE -eq 5 ]]; then
+            if [[ ${MODE} -eq 5 ]]; then
                 MODE=4
-            elif [[ $MODE -eq 3 ]]; then
+            elif [[ ${MODE} -eq 3 ]]; then
                 MODE=4
             else
                 MODE=2
@@ -848,9 +828,9 @@ do
             shift
             ;;
         -r|--rollback)
-            if [[ $MODE -eq 5 ]]; then
+            if [[ ${MODE} -eq 5 ]]; then
                 MODE=4
-            elif [[ $MODE -eq 2 ]]; then
+            elif [[ ${MODE} -eq 2 ]]; then
                 MODE=4
             else
                 MODE=3
@@ -859,9 +839,9 @@ do
             shift
             ;;
         -b|--branch)
-            if [[ $MODE -eq 2 ]]; then
+            if [[ ${MODE} -eq 2 ]]; then
                 MODE=4
-            elif [[ $MODE -eq 3 ]]; then
+            elif [[ ${MODE} -eq 3 ]]; then
                 MODE=4
             else
                 MODE=5
