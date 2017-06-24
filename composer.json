@@ -1,6 +1,6 @@
 {
     "name": "humandevice/deployer",
-    "description": "SVN deployer for Yii 2 apps.",
+    "description": "GIT/SVN deployer for Yii 2 apps.",
     "type": "script",
     "license": "MIT",
     "scripts": {

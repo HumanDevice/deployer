@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v3.3.3
+# Human Device Yii 2 deployer v3.4.0
 # ========================================================
 # -h, --help for help
 
@@ -54,7 +54,6 @@ VERSION=""
 VERBOSE=0
 USING_TEMPORARY_COMPOSER=0
 MODE=0
-COMPOSER_FORCE_INSTALL=0
 DELETE_ENVS=1
 SKIP_MIG=0
 
@@ -268,13 +267,6 @@ DOWNLOAD_DEV_RELEASE() {
 
 # installs composer dependencies
 COMPOSER_INSTALL() {
-    if [[ ${COMPOSER_FORCE_INSTALL} -eq 0 ]]; then
-        local LMT=$(expr $(expr $(date +%s) - $(stat -c %Y "./${C_FOLDER}/vendor")) / 3600)
-        if [[ ${LMT} -lt 24 ]]; then
-            echo " > skipping composer install (less than 24 hours since last check)"
-            return 1
-        fi
-    fi
     LINE " > installing composer dependencies"
     if [[ ${USING_TEMPORARY_COMPOSER} -eq 1 ]]; then
         cd "./${C_TEMP_FOLDER}"
@@ -301,25 +293,61 @@ COMPOSER_INSTALL() {
 
 # checks vendor folder
 CHECK_VENDOR() {
+    local NEW_LOCK_PRESENT=0
+    local OLD_LOCK_PRESENT=0
+    local OLD_JSON_PRESENT=0
     if [[ ! -d "./${C_FOLDER}" ]]; then
         CREATE_FOLDER " > creating composer folder" "./${C_FOLDER}"
         if [[ $? -eq 0 ]]; then
             return 0
         fi
+    else
+        if [[ -e "./${C_FOLDER}/composer.json" ]]; then
+            OLD_JSON_PRESENT=1
+        fi
+        if [[ -e "./${C_FOLDER}/composer.lock" ]]; then
+            OLD_LOCK_PRESENT=1
+        fi
     fi
-    LINE " > checking release ${1} composer.json"
+    LINE " > checking release ${1} composer.json file"
     if [[ ! -e "./${R_FOLDER}/$1/composer.json" ]]; then
         echo "NO COMPOSER.JSON FOUND! > exit with error"
         return 0
     else
         echo "ok"
     fi
-    if [[ ! -e "./${C_FOLDER}/composer.json" ]]; then
+    LINE " > checking release ${1} composer.lock file"
+    if [[ -e "./${R_FOLDER}/$1/composer.lock" ]]; then
+        NEW_LOCK_PRESENT=1
+        echo "ok"
+    else
+        echo "no lock file"
+    fi
+    if [[ ${OLD_JSON_PRESENT} -e 0 ]]; then
         LINE " > copying composer.json from release ${1} folder"
         if cp "./${R_FOLDER}/$1/composer.json" "./${C_FOLDER}"
         then
             echo "copied"
-            COMPOSER_FORCE_INSTALL=1
+            if [[ ${OLD_LOCK_PRESENT} -e 1 ]]; then
+                LINE " > removing old composer.lock from composer folder"
+                if rm "./${C_FOLDER}/composer.lock"
+                then
+                    echo "ok"
+                else
+                    echo "CAN NOT DELETE COMPOSER.LOCK! > exit with error"
+                    return 0
+                fi
+            fi
+            if [[ ${NEW_LOCK_PRESENT} -e 1 ]]; then
+                LINE " > copying composer.lock from release ${1} folder"
+                if cp "./${R_FOLDER}/$1/composer.lock" "./${C_FOLDER}"
+                then
+                    echo "ok"
+                else
+                    echo "CAN NOT DELETE COMPOSER.LOCK! > exit with error"
+                    return 0
+                fi
+            fi
             COMPOSER_INSTALL
             if [[ $? -eq 0 ]]; then
                 return 0
@@ -327,16 +355,34 @@ CHECK_VENDOR() {
             return 1
         fi
     else
+        local INSTALL_REQUIRED=0
         LINE " > comparing deployed and vendor composer.json versions"
         if [[ $(stat -c%s "./${C_FOLDER}/composer.json") -eq $(stat -c%s "./${R_FOLDER}/${1}/composer.json") ]]; then
             echo "matching"
-            COMPOSER_INSTALL
-            if [[ $? -eq 0 ]]; then
-                return 0
-            fi
-            return 1
         else
             echo "different"
+            INSTALL_REQUIRED=1
+        fi
+        if [[ ${INSTALL_REQUIRED} -eq 0 ]]; then
+            if [[ ${NEW_LOCK_PRESENT} -eq 0 ]]; then
+                INSTALL_REQUIRED=1
+            else
+                if [[ ${OLD_LOCK_PRESENT} -eq 0 ]]; then
+                    INSTALL_REQUIRED=1
+                else
+                    LINE " > comparing deployed and vendor composer.lock versions"
+                    if [[ $(stat -c%s "./${C_FOLDER}/composer.lock") -eq $(stat -c%s "./${R_FOLDER}/${1}/composer.lock") ]]; then
+                        echo "matching"
+                    else
+                        echo "different"
+                        INSTALL_REQUIRED=1
+                    fi
+                fi
+            fi
+        fi
+        if [[ ${INSTALL_REQUIRED} -eq 0 ]]; then
+            return 1
+        else
             CREATE_FOLDER " > creating temporary composer folder" "./${C_TEMP_FOLDER}"
             if [[ $? -eq 0 ]]; then
                 return 0
@@ -346,7 +392,15 @@ CHECK_VENDOR() {
             if cp "./${R_FOLDER}/${1}/composer.json" "./${C_TEMP_FOLDER}"
             then
                 echo "copied"
-                COMPOSER_FORCE_INSTALL=1
+                if [[ ${NEW_LOCK_PRESENT} -eq 1 ]]; then
+                    LINE " > copying composer.lock from release ${1} folder"
+                    if cp "./${R_FOLDER}/${1}/composer.lock" "./${C_TEMP_FOLDER}"
+                    then
+                        echo "copied"
+                    else
+                        return 0
+                    fi
+                fi
                 COMPOSER_INSTALL
                 if [[ $? -eq 0 ]]; then
                     return 0
@@ -388,7 +442,7 @@ INIT() {
     return 0
 }
 
-# starts Yii 2 migration
+# starts Yii 2 migration (up)
 MIGRATE() {
     if [[ ${SKIP_MIG} -eq 1 ]]; then
         echo " > skipping migration"
@@ -402,6 +456,12 @@ MIGRATE() {
         if eval "${CMD}"
         then
             echo "done"
+            if [[ "$RIGHTS" != "" ]]; then
+                if [[ -e "./${R_FOLDER}/${1}/console/runtime/logs/app.log" ]]; then
+                    chmod 0777 "./${R_FOLDER}/${1}/console/runtime/logs/app.log"
+                    chown ${RIGHTS} "./${R_FOLDER}/${1}/console/runtime/logs/app.log"
+                fi
+            fi
             return 1
         fi
     fi
@@ -553,7 +613,9 @@ DEPLOY() {
                     INIT "$VERSION"
                     if [[ $? -eq 1 ]]; then
                         MIGRATE "$VERSION"
-                        SWITCH "$VERSION"
+                        if [[ $? -eq 1 ]]; then
+                            SWITCH "$VERSION"
+                        fi
                     fi
                 fi
             fi
@@ -679,7 +741,7 @@ START() {
     elif [[ ${MODE} -eq 1 ]]; then
         echo "NAME"
         echo ""
-        echo "    deployer v3.3.3 - deploy SVN/GIT version of Yii 2 project"
+        echo "    deployer v3.4.0 - deploy SVN/GIT version of Yii 2 project"
         echo ""
         echo "SYNOPSIS"
         echo ""
@@ -713,9 +775,6 @@ START() {
         echo ""
         echo "    -v, --verbose"
         echo "        runs the script in verbose mode where output is visible"
-        echo ""
-        echo "    -f, --forceinstall"
-        echo "        forces composer install"
         echo ""
         echo "    -s, --skipmigrate"
         echo "        skips migration update"
@@ -796,9 +855,6 @@ do
             ;;
         -v|--verbose)
             VERBOSE=1
-            ;;
-        -f|--forceinstall)
-            COMPOSER_FORCE_INSTALL=1
             ;;
         -s|--skipmigrate)
             SKIP_MIG=1
