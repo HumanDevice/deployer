@@ -456,12 +456,6 @@ MIGRATE() {
         if eval "${CMD}"
         then
             echo "done"
-            if [[ "$RIGHTS" != "" ]]; then
-                if [[ -e "./${R_FOLDER}/${1}/console/runtime/logs/app.log" ]]; then
-                    chmod 0777 "./${R_FOLDER}/${1}/console/runtime/logs/app.log"
-                    chown ${RIGHTS} "./${R_FOLDER}/${1}/console/runtime/logs/app.log"
-                fi
-            fi
             return 1
         fi
     fi
