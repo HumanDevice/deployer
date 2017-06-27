@@ -42,6 +42,28 @@ C_FOLDER="composer"
 # temporary composer folder name for vendor storage
 C_TEMP_FOLDER="composer_temp"
 
+# events scripts
+BEFORE_START=""
+AFTER_END=""
+BEFORE_DOWNLOAD=""
+AFTER_DOWNLOAD=""
+BEFORE_DEPLOY=""
+AFTER_DEPLOY=""
+BEFORE_DEPLOYDEV=""
+AFTER_DEPLOYDEV=""
+BEFORE_INIT=""
+AFTER_INIT=""
+BEFORE_MIGRATE=""
+AFTER_MIGRATE=""
+BEFORE_UPDATE=""
+AFTER_UPDATE=""
+BEFORE_ROLLBACK=""
+AFTER_ROLLBACK=""
+BEFORE_INSTALL=""
+AFTER_INSTALL=""
+BEFORE_SWITCH=""
+AFTER_SWITCH=""
+
 # load cfg settings
 # ========================================================
 if [[ -e "./deployer.cfg" ]]; then
@@ -84,6 +106,7 @@ END_MARKER() {
         fi
     fi
     echo "FINISHED at $(date +"%r")."
+    RUN_EVENT "AFTER_END"
 }
 
 # creates folder
@@ -109,6 +132,13 @@ CREATE_FOLDER() {
         fi
     fi
     return 0
+}
+
+RUN_EVENT() {
+    local CMD=${!1}
+    if [[ "${CMD}" != "" ]]; then
+        eval "${CMD}"
+    fi
 }
 
 # initialises release folder
@@ -184,6 +214,7 @@ DOWNLOAD_PROD_RELEASE_GIT() {
     fi
     if eval "${CMD}"
     then
+
         return 1
     fi
     return 0
@@ -191,17 +222,22 @@ DOWNLOAD_PROD_RELEASE_GIT() {
 
 # downloads production release folder
 DOWNLOAD_PROD_RELEASE() {
+    RUN_EVENT "BEFORE_DOWNLOAD"
     if [[ "$REPO_TYPE" = "GIT" ]]; then
         DOWNLOAD_PROD_RELEASE_GIT "$1"
         if [[ $? -eq 0 ]]; then
+            RUN_EVENT "AFTER_DOWNLOAD"
             return 0
         fi
         rm -rf "./${R_FOLDER}/${1}/.git"
+        RUN_EVENT "AFTER_DOWNLOAD"
     elif [[ "$REPO_TYPE" = "SVN" ]]; then
         DOWNLOAD_PROD_RELEASE_SVN "$1"
         if [[ $? -eq 0 ]]; then
+            RUN_EVENT "AFTER_DOWNLOAD"
             return 0
         fi
+        RUN_EVENT "AFTER_DOWNLOAD"
     else
         echo " > UNSUPPORTED REPO TYPE: only GIT and SVN are allowed! > exit with error"
         return 0
@@ -243,17 +279,22 @@ DOWNLOAD_DEV_RELEASE_GIT() {
 
 # downloads development release folder
 DOWNLOAD_DEV_RELEASE() {
+    RUN_EVENT "BEFORE_DOWNLOAD"
     if [[ "$REPO_TYPE" = "GIT" ]]; then
         DOWNLOAD_DEV_RELEASE_GIT
         if [[ $? -eq 0 ]]; then
+            RUN_EVENT "AFTER_DOWNLOAD"
             return 0
         fi
         rm -rf "./${R_FOLDER}/${DN_FOLDER}/.git"
+        RUN_EVENT "AFTER_DOWNLOAD"
     elif [[ "$REPO_TYPE" = "SVN" ]]; then
         DOWNLOAD_DEV_RELEASE_SVN
         if [[ $? -eq 0 ]]; then
+            RUN_EVENT "AFTER_DOWNLOAD"
             return 0
         fi
+        RUN_EVENT "AFTER_DOWNLOAD"
     else
         echo " > UNSUPPORTED REPO TYPE: only GIT and SVN are allowed! > exit with error"
         return 0
@@ -267,6 +308,7 @@ DOWNLOAD_DEV_RELEASE() {
 
 # installs composer dependencies
 COMPOSER_INSTALL() {
+    RUN_EVENT "BEFORE_INSTALL"
     LINE " > installing composer dependencies"
     if [[ ${USING_TEMPORARY_COMPOSER} -eq 1 ]]; then
         cd "./${C_TEMP_FOLDER}"
@@ -285,9 +327,11 @@ COMPOSER_INSTALL() {
     then
         echo "installed"
         cd ..
+        RUN_EVENT "AFTER_INSTALL"
         return 1
     fi
     cd ..
+    RUN_EVENT "AFTER_INSTALL"
     return 0
 }
 
@@ -429,6 +473,7 @@ SYMLINK() {
 
 # starts Yii 2 init
 INIT() {
+    RUN_EVENT "BEFORE_INIT"
     LINE " > running Yii 2 init for ${ENV}"
     local CMD="php \"./${R_FOLDER}/${1}/init\" --env=${ENV} --overwrite=All >/dev/null"
     if [[ ${VERBOSE} -eq 1 ]]; then
@@ -437,8 +482,10 @@ INIT() {
     if eval "${CMD}"
     then
         echo "done"
+        RUN_EVENT "AFTER_INIT"
         return 1
     fi
+    RUN_EVENT "AFTER_INIT"
     return 0
 }
 
@@ -448,6 +495,7 @@ MIGRATE() {
         echo " > skipping migration"
         return 1
     else
+        RUN_EVENT "BEFORE_MIGRATE"
         LINE " > running Yii 2 migration"
         local CMD="php \"./${R_FOLDER}/${1}/yii\" migrate --interactive=0 >/dev/null"
         if [[ ${VERBOSE} -eq 1 ]]; then
@@ -456,8 +504,10 @@ MIGRATE() {
         if eval "${CMD}"
         then
             echo "done"
+            RUN_EVENT "AFTER_MIGRATE"
             return 1
         fi
+        RUN_EVENT "AFTER_MIGRATE"
     fi
     return 0
 }
@@ -540,10 +590,12 @@ BACKUP_RECOVER() {
 
 # switches production releases
 SWITCH() {
+    RUN_EVENT "BEFORE_SWITCH"
     if [[ ! -h "./${HOST}" ]]; then
         LINE " > symlinking ${HOST} to release $1"
         SYMLINK_RELEASE "$1"
         if [[ $? -eq 1 ]]; then
+            RUN_EVENT "AFTER_SWITCH"
             return 1
         fi
     else
@@ -555,6 +607,7 @@ SWITCH() {
                 SYMLINK_RELEASE "$1"
                 if [[ $? -eq 1 ]]; then
                     BACKUP_DELETE
+                    RUN_EVENT "AFTER_SWITCH"
                     return 1
                 else
                     BACKUP_RECOVER
@@ -563,6 +616,7 @@ SWITCH() {
             BACKUP_DELETE
         fi
     fi
+    RUN_EVENT "AFTER_SWITCH"
     return 0
 }
 
@@ -595,6 +649,8 @@ MOVEDEV() {
 
 # deploys tag
 DEPLOY() {
+    RUN_EVENT "BEFORE_START"
+    RUN_EVENT "BEFORE_DEPLOY"
     echo "STARTING deployment of ${PROJECT} version ${VERSION} at $(date +"%r")."
     INIT_RELEASE_FOLDER "$VERSION"
     if [[ $? -eq 1 ]]; then
@@ -615,11 +671,14 @@ DEPLOY() {
             fi
         fi
     fi
+    RUN_EVENT "AFTER_DEPLOY"
     END_MARKER
 }
 
 # rollbacks tag
 ROLLBACK() {
+    RUN_EVENT "BEFORE_START"
+    RUN_EVENT "BEFORE_ROLLBACK"
     echo "STARTING rollback of ${PROJECT} to version ${VERSION} at $(date +"%r")."
     CHECK_RELEASE_FOLDER "$VERSION"
     if [[ $? -eq 1 ]]; then
@@ -631,11 +690,14 @@ ROLLBACK() {
             fi
         fi
     fi
+    RUN_EVENT "AFTER_ROLLBACK"
     END_MARKER
 }
 
 # deploys development
 DEPLOYDEV() {
+    RUN_EVENT "BEFORE_START"
+    RUN_EVENT "BEFORE_DEPLOYDEV"
     echo "STARTING deployment of ${PROJECT} development version at $(date +"%r")."
     INIT_DEVELOPMENT_FOLDER
     if [[ $? -eq 1 ]]; then
@@ -657,6 +719,7 @@ DEPLOYDEV() {
             fi
         fi
     fi
+    RUN_EVENT "AFTER_DEPLOYDEV"
     END_MARKER
 }
 
@@ -688,6 +751,28 @@ CREATECONFIG() {
         echo "" >> ./deployer.cfg
         echo "# project name (just for display)" >> ./deployer.cfg
         echo "PROJECT=\"change me\"" >> ./deployer.cfg
+        echo "" >> ./deployer.cfg
+        echo "# events scripts" >> ./deployer.cfg
+        echo "BEFORE_START=\"\"" >> ./deployer.cfg
+        echo "AFTER_END=\"\"" >> ./deployer.cfg
+        echo "BEFORE_DOWNLOAD=\"\"" >> ./deployer.cfg
+        echo "AFTER_DOWNLOAD=\"\"" >> ./deployer.cfg
+        echo "BEFORE_DEPLOY=\"\"" >> ./deployer.cfg
+        echo "AFTER_DEPLOY=\"\"" >> ./deployer.cfg
+        echo "BEFORE_DEPLOYDEV=\"\"" >> ./deployer.cfg
+        echo "AFTER_DEPLOYDEV=\"\"" >> ./deployer.cfg
+        echo "BEFORE_INIT=\"\"" >> ./deployer.cfg
+        echo "AFTER_INIT=\"\"" >> ./deployer.cfg
+        echo "BEFORE_MIGRATE=\"\"" >> ./deployer.cfg
+        echo "AFTER_MIGRATE=\"\"" >> ./deployer.cfg
+        echo "BEFORE_UPDATE=\"\"" >> ./deployer.cfg
+        echo "AFTER_UPDATE=\"\"" >> ./deployer.cfg
+        echo "BEFORE_ROLLBACK=\"\"" >> ./deployer.cfg
+        echo "AFTER_ROLLBACK=\"\"" >> ./deployer.cfg
+        echo "BEFORE_INSTALL=\"\"" >> ./deployer.cfg
+        echo "AFTER_INSTALL=\"\"" >> ./deployer.cfg
+        echo "BEFORE_SWITCH=\"\"" >> ./deployer.cfg
+        echo "AFTER_SWITCH=\"\"" >> ./deployer.cfg
         echo "done"
     fi
     echo ""
@@ -711,6 +796,7 @@ CHECKPERM() {
 
 # updates deployer
 UPDATE() {
+    RUN_EVENT "BEFORE_UPDATE"
     echo " > updating deployer in global mode:"
     composer global update humandevice/deployer
     local VENDOR=$(composer global config vendor-dir --absolute)
@@ -724,6 +810,7 @@ UPDATE() {
     echo " > setting deployer file executable"
     ${PERM} chmod +x /usr/local/bin/deployer
     echo " > deployer updated"
+    RUN_EVENT "AFTER_UPDATE"
 }
 
 # starts script
