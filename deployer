@@ -323,12 +323,12 @@ CHECK_VENDOR() {
     else
         echo "no lock file"
     fi
-    if [[ ${OLD_JSON_PRESENT} -e 0 ]]; then
+    if [[ ${OLD_JSON_PRESENT} -eq 0 ]]; then
         LINE " > copying composer.json from release ${1} folder"
         if cp "./${R_FOLDER}/$1/composer.json" "./${C_FOLDER}"
         then
             echo "copied"
-            if [[ ${OLD_LOCK_PRESENT} -e 1 ]]; then
+            if [[ ${OLD_LOCK_PRESENT} -eq 1 ]]; then
                 LINE " > removing old composer.lock from composer folder"
                 if rm "./${C_FOLDER}/composer.lock"
                 then
@@ -338,7 +338,7 @@ CHECK_VENDOR() {
                     return 0
                 fi
             fi
-            if [[ ${NEW_LOCK_PRESENT} -e 1 ]]; then
+            if [[ ${NEW_LOCK_PRESENT} -eq 1 ]]; then
                 LINE " > copying composer.lock from release ${1} folder"
                 if cp "./${R_FOLDER}/$1/composer.lock" "./${C_FOLDER}"
                 then
