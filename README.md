@@ -79,3 +79,27 @@ Configuration can be stored in separate file `deployer.cfg` (in the same folder)
 | RIGHTS     | Optional folder rights to be set (use chown syntax owner:group).
 | PROJECT    | Project name (for display purposes only).
 
+## EVENTS
+
+The following events are available for additional scripts:
+
+- BEFORE_START
+- AFTER_END
+- BEFORE_DOWNLOAD
+- AFTER_DOWNLOAD
+- BEFORE_DEPLOY
+- AFTER_DEPLOY
+- BEFORE_DEPLOYDEV
+- AFTER_DEPLOYDEV
+- BEFORE_INIT
+- AFTER_INIT
+- BEFORE_MIGRATE
+- AFTER_MIGRATE
+- BEFORE_UPDATE
+- AFTER_UPDATE
+- BEFORE_ROLLBACK
+- AFTER_ROLLBACK
+- BEFORE_INSTALL
+- AFTER_INSTALL
+- BEFORE_SWITCH
+- AFTER_SWITCH
