@@ -1,5 +1,5 @@
 #!/bin/bash
-# Human Device Yii 2 deployer v3.4.0
+# Human Device Yii 2 deployer v3.4.1
 # ========================================================
 # -h, --help for help
 
@@ -506,10 +506,12 @@ MIGRATE() {
             echo "done"
             RUN_EVENT "AFTER_MIGRATE"
             return 1
+        else
+            echo "failed"
+            RUN_EVENT "AFTER_MIGRATE"
+            return 0
         fi
-        RUN_EVENT "AFTER_MIGRATE"
     fi
-    return 0
 }
 
 # switches temporary composer folder
@@ -712,7 +714,9 @@ DEPLOYDEV() {
                         INIT "$DC_FOLDER"
                         if [[ $? -eq 1 ]]; then
                             MIGRATE "$DC_FOLDER"
-                            SWITCH "$DC_FOLDER"
+                            if [[ $? -eq 1 ]]; then
+                                SWITCH "$DC_FOLDER"
+                            fi
                         fi
                     fi
                 fi
@@ -822,14 +826,14 @@ START() {
     elif [[ ${MODE} -eq 1 ]]; then
         echo "NAME"
         echo ""
-        echo "    deployer v3.4.0 - deploy SVN/GIT version of Yii 2 project"
+        echo "    deployer v3.4.1 - deploy SVN/GIT version of Yii 2 project"
         echo ""
         echo "SYNOPSIS"
         echo ""
-        echo "    deployer -d TAG [-v] [-f] [-s] [-e ENV]"
-        echo "    deployer -r TAG [-v] [-f] [-e ENV]"
-        echo "    deployer -dev [-v] [-f] [-s] [-e ENV]"
-        echo "    deployer -b BRANCH [-v] [-f] [-s] [-e ENV]"
+        echo "    deployer -d TAG [-v] [-s] [-e ENV]"
+        echo "    deployer -r TAG [-v] [-e ENV]"
+        echo "    deployer -dev [-v] [-s] [-e ENV]"
+        echo "    deployer -b BRANCH [-v] [-s] [-e ENV]"
         echo "    deployer -h"
         echo "    deployer -c"
         echo "    deployer -u"
